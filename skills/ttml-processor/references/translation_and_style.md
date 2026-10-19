@@ -26,6 +26,15 @@ Before translating, **you MUST conduct thorough context and lore research**, str
 2. **From-Scratch Crafting**:
    - Every lyric translation is an independent piece of art. Translate from zero based on original vocal cues, rhythm, and stage persona.
    - When requested to re-translate, wipe all assumptions from prior drafts and start afresh line by line.
+3. **Direct Source Translation (No Pivot Language)**:
+   - Translate directly from the original lyric language into the target language
+   - Never translate into English first and then into the target language; a pivot step flattens wordplay, honorifics, and sentence-final nuance that only exist in the source
+   - Mixed-language lines (e.g., Korean with English hooks) are translated segment by segment from each segment's own language
+4. **Onomatopoeia & Interjections Stay Untranslated**:
+   - Keep onomatopoeia, interjections, and vocables in their original form inside the translation (e.g., `oh`, `yeah`, `ah`, `uh`, `na na na`, `la la la`, `woo`, `ooh`, `hey`, `아`, `오`, `ねえ`, `あぁ`)
+   - Do not render them as Chinese equivalents such as "哦", "耶", "啊", "啦啦啦", "嘿"
+   - A line made up entirely of such sounds uses the original text verbatim as its translation (and as its `bg_translation` for background vocals)
+   - Words that carry real meaning beyond sound (e.g., `hey you`, `oh my god` used as a phrase) are translated normally
 
 ---
 

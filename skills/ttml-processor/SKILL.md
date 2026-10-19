@@ -124,7 +124,12 @@ Adhere strictly to the literary quality guidelines:
    - Maintain stage tension, rhythmic bite, and acoustic flow suitable for live performance.
 4. **Zero-Copy Rule**:
    - Strictly prohibit copying or borrowing machine translations, web scraps, or external templates. Every song translation is an independent piece of art created from scratch.
-5. **Timing Guardrails**:
+5. **Direct Source Translation**:
+   - Translate straight from the original language into the target language; never pivot through English (e.g., Korean/Japanese → English → Chinese) as an intermediate step
+6. **Keep Onomatopoeia & Interjections Untranslated**:
+   - Onomatopoeia, interjections, and vocables (e.g., `oh`, `yeah`, `ah`, `na na na`, `la la`, `woo`, `ooh`, `hey`, `아`, `오`, `ねえ`) stay in their original form inside the translation
+   - A line made up entirely of such sounds uses the original text verbatim as its translation
+7. **Timing Guardrails**:
    - Never modify syllable timestamps (`<span begin="..." end="...">`) or line timestamps.
    - The pipeline handles all reconstruction, preserving trailing spaces (`"word "`) for smooth karaoke highlights.
 
