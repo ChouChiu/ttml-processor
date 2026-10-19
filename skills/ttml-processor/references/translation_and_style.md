@@ -30,6 +30,7 @@ Before translating, **you MUST conduct thorough context and lore research**, str
    - Translate directly from the original lyric language into the target language
    - Never translate into English first and then into the target language; a pivot step flattens wordplay, honorifics, and sentence-final nuance that only exist in the source
    - Mixed-language lines (e.g., Korean with English hooks) are translated segment by segment from each segment's own language
+   - English segments must be translated too; never translate only the Korean/Japanese part and leave English words, phrases, or whole English lines as-is (only onomatopoeia and interjections stay untranslated, see rule 4)
 4. **Onomatopoeia & Interjections Stay Untranslated**:
    - Keep onomatopoeia, interjections, and vocables in their original form inside the translation (e.g., `oh`, `yeah`, `ah`, `uh`, `na na na`, `la la la`, `woo`, `ooh`, `hey`, `아`, `오`, `ねえ`, `あぁ`)
    - Do not render them as Chinese equivalents such as "哦", "耶", "啊", "啦啦啦", "嘿"

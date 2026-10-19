@@ -126,6 +126,7 @@ Adhere strictly to the literary quality guidelines:
    - Strictly prohibit copying or borrowing machine translations, web scraps, or external templates. Every song translation is an independent piece of art created from scratch.
 5. **Direct Source Translation**:
    - Translate straight from the original language into the target language; never pivot through English (e.g., Korean/Japanese → English → Chinese) as an intermediate step
+   - Translate English segments as well; never translate only the Korean/Japanese part while leaving English words or English lines untouched (onomatopoeia and interjections excepted)
 6. **Keep Onomatopoeia & Interjections Untranslated**:
    - Onomatopoeia, interjections, and vocables (e.g., `oh`, `yeah`, `ah`, `na na na`, `la la`, `woo`, `ooh`, `hey`, `아`, `오`, `ねえ`) stay in their original form inside the translation
    - A line made up entirely of such sounds uses the original text verbatim as its translation
