@@ -46,9 +46,13 @@ function readHeader($: CheerioAPI): HeaderMeta {
 		if (id) header.agents[id] = textOf($(el).find("ttm\\:name, name")) || id;
 	});
 
+	const seenSongwriters = new Set<string>();
 	metadata.find(SELECTOR.songwriter).each((_, el) => {
-		const name = textOf($(el));
-		if (name) header.songwriters?.push(name);
+		const name = textOf($(el)).trim();
+		if (name && !seenSongwriters.has(name.toLowerCase())) {
+			seenSongwriters.add(name.toLowerCase());
+			header.songwriters?.push(name);
+		}
 	});
 
 	return header;

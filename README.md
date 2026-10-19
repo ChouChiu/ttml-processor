@@ -36,10 +36,13 @@ npx skills add ChouChiu/ttml-processor -y -g
 - **曲式分段（songPart）**：自动将歌词行包裹至 `<div itunes:songPart="...">`，首末时间戳与对应行精确对齐
 - **背景和声（x-bg）**：支持副歌 Ad-libs 与和声包裹，其翻译与音译均嵌套在 `x-bg` 内部
 - **Genius 结构抓取**：免 API Key 获取歌曲曲式分段与演唱者分配，并生成对应的 TTML 骨架
-- **歌曲元数据抓取**：从 QQ 音乐与网易云音乐获取标题、艺术家、专辑、作词作曲等信息，以及 `qqMusicId` / `ncmMusicId`，可直接写入工作区 JSON，再由 AI 按 SKILL 中的核对规则修正
-- **双引擎校验**：结合 `@applemusic-like-lyrics/ttml` 官方解析器与 Cheerio 进行语法、时间戳时序、和声隔离与规范合规检查
+- **歌曲元数据抓取与校验**：从 QQ 音乐与网易云音乐获取标题、艺术家、专辑、作词作曲等信息及平台 ID；校验器严格检查元数据完整性与词曲作者（`<songwriters>`）署名
+- **全量去重校验**：对词曲作者、演唱者 Agent ID、行号 Key（`L1`, `L2`...）、AMLL 元数据及集中翻译进行严格去重与唯一性校验，防止键名冲突
+- **音节切分与卡拉OK高亮（--segment）**：支持非拉丁语系多字词自动切分为单字音节并按比例划分时间戳，在 `<transliterations>` 下生成时间轴音译 span，无需额外占用静态第 3 行歌词
+- **双引擎校验**：结合 `@applemusic-like-lyrics/ttml` 官方解析器与 Cheerio 进行语法、时间戳时序、元数据完整性、词曲作者、去重、和声隔离与 Option C 音译合规检查
 - **高保真 XML 格式化**：全自动 2 空格层级美化排版，保护逐字时间戳尾随空格，便于 Git 版本管理与差异对比
 - **安全 XML 转义**：全面转义歌词及译文中的 `&`、`<`、`>`、`"` 等特殊字符，杜绝 XML 解析与实体解析异常
+
 
 
 
@@ -79,9 +82,10 @@ bun skills/ttml-processor/scripts/fetch_genius_parts.ts "歌手名 歌名" --ttm
 自动生成 Option C 罗马音、曲式 `<div>` 容器并注入双轨翻译与美化排版：
 
 ```bash
-bun skills/ttml-processor/scripts/ttml_pipeline.ts build song.ttml workspace.json -o completed.ttml
+bun skills/ttml-processor/scripts/ttml_pipeline.ts build song.ttml workspace.json -o completed.ttml [--no-roman] [--segment]
 ```
-*如不需要罗马音，可添加 `--no-roman` 参数*
+*如不需要罗马音，可添加 `--no-roman` 参数；如需对非拉丁语言进行逐字音节切分与卡拉OK高亮对齐，可添加 `--segment` 参数*
+
 
 ### 5. 校验输出与运行测试
 检查生成的 TTML 是否符合规范：
@@ -155,11 +159,15 @@ bun skills/ttml-processor/scripts/validate_ttml.ts <file.ttml>
 检查项包括：
 - AMLL 解析与分屏判定（`isDuet` 状态）
 - XML 语法与基础命名空间（`itunes`, `ttm`, `tts`, `amll`）
+- 歌曲元数据完整性（`<ttm:title>`、`musicName`、`artists` 必填）
+- 词曲作者（`<songwriters>`）署名与非空校验（Apple Music 规范硬性要求）
+- 全量唯一性去重校验（词曲作者、演唱者 Agent ID、行号 Key、AMLL 标签、双轨集中翻译）
 - `<div>` 与 `<p>` 时间戳时序（`begin <= end`）与首末对齐
 - 演唱者声明与 `type="group"` 校验（杜绝双列分屏）
-- 行内翻译（Track A）与集中翻译（Track B）的行数对应
+- 行内翻译（Track A）与集中翻译（Track B）的 1:1 覆盖
 - Option C 音译规则（纯英文行跳过、无残留英文单词）
 - 背景和声（`x-bg`）翻译与音译的封闭隔离检查
+
 
 
 

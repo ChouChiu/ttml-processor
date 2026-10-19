@@ -47,11 +47,20 @@ describe("parseLyricCredits", () => {
 		).toEqual({});
 	});
 
-	it("dedupes songwriters case-insensitively", () => {
+	it("accumulates multiple credit lines for the same role without duplicates", () => {
+		const lrc =
+			"[00:00.00] 作词 : Writer A\n[00:01.00] 作词 : Writer B / Writer A\n[00:02.00] 作曲 : Composer C";
+		expect(parseLyricCredits(lrc)).toEqual({
+			作词: ["Writer A", "Writer B"],
+			作曲: ["Composer C"],
+		});
+	});
+
+	it("dedupes songwriters case-insensitively and trims whitespace", () => {
 		expect(
 			songwritersFrom({
-				作词: ["KENZIE"],
-				作曲: ["Kenzie", "Dem Jointz"],
+				作词: [" KENZIE ", ""],
+				作曲: ["kenzie", "  Dem Jointz  "],
 				编曲: ["X"],
 			}),
 		).toEqual(["KENZIE", "Dem Jointz"]);
@@ -114,5 +123,15 @@ describe("applySongMetadata", () => {
 		expect(
 			applySongMetadata(meta, fetched, { overwrite: true }).songwriters,
 		).toEqual(["KENZIE"]);
+	});
+
+	it("deduplicates and trims dirty songwriters during apply", () => {
+		const { meta } = sampleWorkspace();
+		const dirtyMeta = {
+			...meta,
+			songwriters: [" KENZIE ", "kenzie", "  ", "Dem Jointz"],
+		};
+		const applied = applySongMetadata(dirtyMeta, fetched);
+		expect(applied.songwriters).toEqual(["KENZIE", "Dem Jointz"]);
 	});
 });

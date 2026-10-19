@@ -1,15 +1,15 @@
 # Apple Music TTML & AMLL Specification Quick Reference
 
-This document defines the complete XML schema, namespaces, and element formatting standards for TTML (Timed Text Markup Language) lyric files compatible with Apple Music and AMLL (Apple Music-like Lyrics).
+XML schema, namespaces, and element formatting standards for TTML (`*.ttml`) lyric files compatible with Apple Music and AMLL (Apple Music-like Lyrics).
 
 ---
 
 ## 1. Root Element & Namespace Declarations
 
-The `<tt>` root element must declare the following standard and internal namespaces, along with timing mode and base song language:
+The `<tt>` root element declares standard TTML and platform extension namespaces:
 
 ```xml
-<tt itunes:timing="Word" xml:lang="en"
+<tt itunes:timing="Word" xml:lang="ko"
     xmlns="http://www.w3.org/ns/ttml"
     xmlns:itunes="http://music.apple.com/lyric-ttml-internal"
     xmlns:ttm="http://www.w3.org/ns/ttml#metadata"
@@ -17,7 +17,7 @@ The `<tt>` root element must declare the following standard and internal namespa
     xmlns:amll="http://www.example.com/ns/amll">
   <head>
     <metadata>
-      <!-- Metadata, Vocalist Agent declarations, Centralized translations -->
+      <!-- Title, Agents, AMLL Metadata, iTunesMetadata -->
     </metadata>
   </head>
   <body dur="3:20.150">
@@ -30,15 +30,15 @@ The `<tt>` root element must declare the following standard and internal namespa
 
 ## 2. Header Metadata (`<head><metadata>`)
 
-The metadata block carries track details, singer registrations, and Apple Music native translation and transliteration trees:
+Carries track details, singer registrations, songwriters, and centralized translation trees:
 
 ```xml
   <head>
     <metadata>
-      <!-- Track title and featured artists -->
-      <ttm:title>Song Title (feat. Featured Artist)</ttm:title>
+      <!-- Track Title (Mandatory) -->
+      <ttm:title>Song Title</ttm:title>
 
-      <!-- Vocalist Agent Declarations (Duet Prevention: all set to type="group") -->
+      <!-- Vocalist Agent Declarations (Unique xml:id; type="group" strictly required to prevent duet split) -->
       <ttm:agent type="group" xml:id="v1">
         <ttm:name type="full">Singer 1</ttm:name>
       </ttm:agent>
@@ -50,7 +50,7 @@ The metadata block carries track details, singer registrations, and Apple Music 
         <ttm:name type="full">Singer 1, Singer 2</ttm:name>
       </ttm:agent>
 
-      <!-- AMLL Extended Metadata -->
+      <!-- AMLL Extended Metadata (Unique keys; musicName & artists essential) -->
       <amll:meta key="musicName" value="Song Title"/>
       <amll:meta key="artists" value="Official Release Artist"/>
       <amll:meta key="album" value="Album Name"/>
@@ -58,39 +58,39 @@ The metadata block carries track details, singer registrations, and Apple Music 
       <amll:meta key="ncmMusicId" value="NetEase Cloud Music ID (optional)"/>
       <amll:meta key="ttmlAuthorGithub" value="Lyric Creator GitHub Username"/>
 
-      <!-- AMLL Group Member Roster (Independent of track release artist) -->
+      <!-- AMLL Group Member Roster (Unique keys) -->
       <amll:vocals>
         <vocal key="1" value="Singer 1"/>
         <vocal key="2" value="Singer 2"/>
       </amll:vocals>
 
-      <!-- Apple Music Native Centralized Metadata & Translations -->
+      <!-- Apple Music Native Metadata & Centralized Trees -->
       <iTunesMetadata xmlns="http://music.apple.com/lyric-ttml-internal">
+        <!-- Songwriters (Mandatory; lyricist then composer; deduplicated case-insensitively) -->
         <songwriters>
-          <songwriter>Songwriter 1</songwriter>
-          <songwriter>Songwriter 2</songwriter>
+          <songwriter>Lyricist Name</songwriter>
+          <songwriter>Composer Name</songwriter>
         </songwriters>
 
-        <!-- Track B: Centralized Translation Mirror (Must cover all L1..LN 1:1) -->
+        <!-- Track B: Centralized Translations (1:1 coverage of all lines L1..LN; no duplicate 'for' keys) -->
         <translations>
           <translation xml:lang="zh-Hans">
             <text for="L1">First line Chinese translation</text>
             <text for="L2">Second line Chinese translation</text>
-            <text for="L3">Third line Chinese translation</text>
           </translation>
         </translations>
 
         <!-- Option C Transliterations:
              - Standard mode: Plain text string
-             - Syllable-segmented mode (--segment): Timed spans for AMLL word.romanWord karaoke mapping without 3rd static line clutter -->
+             - Syllable-segmented mode (--segment): Timed spans for AMLL word.romanWord sync without 3rd static line clutter -->
         <transliterations>
           <transliteration xml:lang="ko-Latn">
-            <!-- Syllable-timed format (preferred for karaoke highlight) -->
+            <!-- Timed syllable format (--segment) -->
             <text for="L1">
               <span begin="0:10.200" end="0:11.100">kkoch-eul </span>
               <span begin="0:11.100" end="0:12.000">pi-wo </span>
             </text>
-            <!-- Line-level format -->
+            <!-- Plain line format -->
             <text for="L2">geu wi-ro</text>
           </transliteration>
         </transliterations>
@@ -101,9 +101,9 @@ The metadata block carries track details, singer registrations, and Apple Music 
 
 ---
 
-## 3. Song Part Structuralization (`itunes:songPart`)
+## 3. Structural Sections (`itunes:songPart`) & Line Keys
 
-All lyric lines `<p>` **must be physically wrapped inside continuous `<div>` blocks** according to the song's musical arrangement. Never leave lines loose or wrap each line in its own single-line `<div>`:
+All lyric lines `<p>` must be enclosed in continuous `<div>` blocks partitioned by musical sections:
 
 ```xml
   <body dur="3:15.500">
@@ -116,52 +116,30 @@ All lyric lines `<p>` **must be physically wrapped inside continuous `<div>` blo
         <!-- Track A: Inline translation span -->
         <span ttm:role="x-translation" xml:lang="zh-Hans">我深知自我价值 万物由我开篇</span>
       </p>
-      <!-- Remaining lyric lines for this section -->
-    </div>
-
-    <div begin="0:35.800" end="0:48.500" itunes:songPart="Pre-Chorus">
-      <!-- ... -->
-    </div>
-
-    <div begin="0:48.500" end="1:12.000" itunes:songPart="Chorus">
-      <!-- ... -->
     </div>
   </body>
 ```
 
-### Standard `itunes:songPart` Enumeration
-- `Intro`
-- `Verse`
-- `Pre-Chorus`
-- `Chorus`
-- `Post-Chorus`
-- `Bridge`
-- `Outro`
-- `Refrain`
-
-### Timing Alignment Rule
-- `div` attribute `begin` must equal the `begin` timestamp of its first `<p>` line.
-- `div` attribute `end` must equal the `end` timestamp of its last `<p>` line.
+### Invariants:
+- **Unique Line Keys**: `itunes:key` (`L1`, `L2`...) must be unique across the document.
+- **Section Alignment**: `div` `begin` must equal first `<p>` `begin`; `div` `end` must equal last `<p>` `end`.
+- **Standard Parts**: `Intro`, `Verse`, `Pre-Chorus`, `Chorus`, `Post-Chorus`, `Bridge`, `Outro`, `Refrain`.
 
 ---
 
-## 4. Background Vocals & Harmonies (`x-bg`)
+## 4. Background Vocals (`x-bg`)
 
-Background vocals and ad-libs must be wrapped in `<span ttm:role="x-bg">`. **Their translations and transliterations must be nested inside `x-bg`**, completely isolated from the main vocal line:
+Ad-libs and secondary vocals must be enclosed inside `<span ttm:role="x-bg">`. Background translations and transliterations must be nested strictly inside `x-bg`:
 
 ```xml
 <p begin="0:48.500" end="0:54.200" itunes:key="L15" ttm:agent="v1">
-  <!-- Lead vocal syllables -->
   <span begin="0:48.500" end="0:50.100">We flash in the dark</span>
-  <!-- Lead vocal translation -->
   <span ttm:role="x-translation" xml:lang="zh-Hans">我们在黑暗中迸发破晓之光</span>
 
   <!-- Background vocal block -->
   <span ttm:role="x-bg" begin="0:50.150" end="0:51.300">
     <span begin="0:50.150" end="0:51.300">(일라)</span>
-    <!-- Background vocal translation -->
     <span ttm:role="x-translation" xml:lang="zh-Hans">(快起身吧)</span>
-    <!-- Background vocal transliteration (Option C) -->
     <span ttm:role="x-roman">(il-ra)</span>
   </span>
 </p>
@@ -171,11 +149,9 @@ Background vocals and ad-libs must be wrapped in `<span ttm:role="x-bg">`. **The
 
 ## 5. Option C Transliteration Rules
 
-Apply only when romanization or pinyin is explicitly requested by the user:
-
-| Line Category | Original Sample | Handling Rule | Output Result |
+| Category | Example Text | Rule | Output |
 | :--- | :--- | :--- | :--- |
-| **Pure English / Latin line** | `Watch how I let it all unfold` | **Completely omit** transliteration elements | *(Skip `<span ttm:role="x-roman">` and centralized `<text>`)* |
+| **Pure English / Latin line** | `Watch how I let it all unfold` | Omit transliteration completely | *(Omitted from `<text>` and `x-roman`)* |
 | **Pure Non-Latin line** | `안개 처럼 번져가` | Full Romanization | `an-gae cheo-reom beon-jyeo-ga` |
-| **Mixed-language line** | `꽃을 피워 내는곳 그 위로 catwalking` | **Strip English words**; romanize only Korean/non-Latin characters | `kkoch-eul pi-wo nae-neun-got geu wi-ro` |
-| **Full Latin Loanwords (Spanish/French)** | `Uh, señorita, ah, ah, viva la vida mía` | Omit transliteration | *(Skip transliteration)* |
+| **Mixed-language line** | `꽃을 피워 내는곳 그 위로 catwalking` | Strip Latin words; romanize only non-Latin characters | `kkoch-eul pi-wo nae-neun-got geu wi-ro` |
+| **Latin Loanwords (Spanish/French)** | `viva la vida mía` | Omit transliteration | *(Omitted)* |

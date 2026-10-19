@@ -49,7 +49,14 @@ export function parseLyricCredits(lrc: string): Record<string, string[]> {
 		const match = CREDIT_LINE.exec(line);
 		const role = match?.[1] && normalizeRole(match[1]);
 		const names = match?.[2] ? splitNames(match[2]) : [];
-		if (role && names.length > 0) credits[role] = names;
+		if (role && names.length > 0) {
+			credits[role] ??= [];
+			for (const name of names) {
+				if (!credits[role].includes(name)) {
+					credits[role].push(name);
+				}
+			}
+		}
 	}
 	return credits;
 }
@@ -60,7 +67,11 @@ export function songwritersFrom(credits: Record<string, string[]>): string[] {
 	for (const [role, names] of Object.entries(credits)) {
 		if (!SONGWRITER_ROLES.has(role)) continue;
 		for (const name of names) {
-			if (!byKey.has(name.toLowerCase())) byKey.set(name.toLowerCase(), name);
+			const trimmed = name.trim();
+			if (!trimmed) continue;
+			if (!byKey.has(trimmed.toLowerCase())) {
+				byKey.set(trimmed.toLowerCase(), trimmed);
+			}
 		}
 	}
 	return [...byKey.values()];

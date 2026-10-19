@@ -139,10 +139,21 @@ function resetItunesMetadata(metadata: Node$, songwriters?: string[]): Node$ {
 
 	if (songwriters && songwriters.length > 0) {
 		itunes.find("songwriters, itunes\\:songwriters").remove();
-		const tags = songwriters.map(
-			(name) => `<songwriter>${escapeXml(name)}</songwriter>`,
-		);
-		itunes.prepend(`<songwriters>${tags.join("")}</songwriters>`);
+		const seen = new Set<string>();
+		const unique: string[] = [];
+		for (const name of songwriters) {
+			const trimmed = name.trim();
+			if (trimmed && !seen.has(trimmed.toLowerCase())) {
+				seen.add(trimmed.toLowerCase());
+				unique.push(trimmed);
+			}
+		}
+		if (unique.length > 0) {
+			const tags = unique.map(
+				(name) => `<songwriter>${escapeXml(name)}</songwriter>`,
+			);
+			itunes.prepend(`<songwriters>${tags.join("")}</songwriters>`);
+		}
 	}
 
 	itunes

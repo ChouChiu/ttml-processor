@@ -65,6 +65,7 @@ export function mergeSongMetadata(songs: SongMetadata[]): SongMetadata {
 		merged.album ||= song.album;
 		merged.releaseDate ||= song.releaseDate;
 	}
+
 	merged.songwriters = songwritersFrom(merged.credits);
 	return merged;
 }
@@ -80,10 +81,20 @@ export function applySongMetadata(
 ): WorkspaceMeta {
 	const pick = (current: string | undefined, next: string) =>
 		(overwrite || !current) && next ? next : (current ?? "");
-	const songwriters =
+	const rawSongwriters =
 		(overwrite || !meta.songwriters?.length) && song.songwriters.length > 0
 			? song.songwriters
-			: meta.songwriters;
+			: (meta.songwriters ?? []);
+
+	const seen = new Set<string>();
+	const songwriters: string[] = [];
+	for (const name of rawSongwriters) {
+		const trimmed = name.trim();
+		if (trimmed && !seen.has(trimmed.toLowerCase())) {
+			seen.add(trimmed.toLowerCase());
+			songwriters.push(trimmed);
+		}
+	}
 
 	return {
 		...meta,

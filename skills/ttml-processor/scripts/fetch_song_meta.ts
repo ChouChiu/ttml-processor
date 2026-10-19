@@ -72,12 +72,16 @@ async function collect(
 }
 
 function printSong(song: SongMetadata): void {
+	const songwriterDisplay =
+		song.songwriters.length > 0
+			? song.songwriters.join(", ")
+			: "[MISSING / NONE DETECTED]";
 	const rows: [string, string][] = [
 		["Title", song.title],
 		["Artists", song.artists.join(", ")],
 		["Album", song.album],
 		["Release", song.releaseDate],
-		["Songwriters", song.songwriters.join(", ")],
+		["Songwriters", songwriterDisplay],
 		...Object.entries(song.credits).map(
 			([label, names]) => [`  ${label}`, names.join(", ")] as [string, string],
 		),
@@ -85,6 +89,11 @@ function printSong(song: SongMetadata): void {
 	];
 	for (const [label, value] of rows) {
 		if (value) console.log(`${label.padEnd(14)} ${value}`);
+	}
+	if (song.songwriters.length === 0) {
+		console.error(
+			"[WARN] No songwriters (lyricist/composer) found from metadata sources; manual entry required in workspace.json",
+		);
 	}
 }
 
@@ -134,6 +143,14 @@ runCli(async () => {
 			"utf-8",
 		);
 		console.error(`[APPLY] Updated metadata in ${values.apply}`);
+		if (
+			!workspace.meta.songwriters ||
+			workspace.meta.songwriters.length === 0
+		) {
+			console.error(
+				`[WARN] 'meta.songwriters' is currently empty in ${values.apply}; please fill lyricists/composers before building`,
+			);
+		}
 	}
 	return 0;
 });
