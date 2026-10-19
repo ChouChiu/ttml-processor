@@ -61,18 +61,24 @@ export function parseLyricCredits(lrc: string): Record<string, string[]> {
 	return credits;
 }
 
-/** Lyricists then composers, deduplicated case-insensitively keeping the first spelling */
-export function songwritersFrom(credits: Record<string, string[]>): string[] {
+/** Deduplicates non-empty strings case-insensitively, preserving original casing of first occurrence */
+export function dedupeCaseInsensitive(items: Iterable<string>): string[] {
 	const byKey = new Map<string, string>();
-	for (const [role, names] of Object.entries(credits)) {
-		if (!SONGWRITER_ROLES.has(role)) continue;
-		for (const name of names) {
-			const trimmed = name.trim();
-			if (!trimmed) continue;
-			if (!byKey.has(trimmed.toLowerCase())) {
-				byKey.set(trimmed.toLowerCase(), trimmed);
-			}
+	for (const item of items) {
+		const trimmed = item.trim();
+		if (!trimmed) continue;
+		const key = trimmed.toLowerCase();
+		if (!byKey.has(key)) {
+			byKey.set(key, trimmed);
 		}
 	}
 	return [...byKey.values()];
+}
+
+/** Lyricists then composers, deduplicated case-insensitively keeping the first spelling */
+export function songwritersFrom(credits: Record<string, string[]>): string[] {
+	const raw = Object.entries(credits)
+		.filter(([role]) => SONGWRITER_ROLES.has(role))
+		.flatMap(([, names]) => names);
+	return dedupeCaseInsensitive(raw);
 }

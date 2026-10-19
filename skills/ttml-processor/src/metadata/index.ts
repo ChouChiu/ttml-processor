@@ -4,11 +4,15 @@ import type {
 	SongMetadata,
 	WorkspaceMeta,
 } from "../types";
-import { songwritersFrom } from "./credits";
+import { dedupeCaseInsensitive, songwritersFrom } from "./credits";
 import { fetchNeteaseMetadata, searchNetease } from "./netease";
 import { fetchQqMetadata, searchQq } from "./qq";
 
-export { parseLyricCredits, songwritersFrom } from "./credits";
+export {
+	dedupeCaseInsensitive,
+	parseLyricCredits,
+	songwritersFrom,
+} from "./credits";
 
 export interface MetadataProvider {
 	name: string;
@@ -86,22 +90,12 @@ export function applySongMetadata(
 			? song.songwriters
 			: (meta.songwriters ?? []);
 
-	const seen = new Set<string>();
-	const songwriters: string[] = [];
-	for (const name of rawSongwriters) {
-		const trimmed = name.trim();
-		if (trimmed && !seen.has(trimmed.toLowerCase())) {
-			seen.add(trimmed.toLowerCase());
-			songwriters.push(trimmed);
-		}
-	}
-
 	return {
 		...meta,
 		title: pick(meta.title, song.title),
 		artists: pick(meta.artists, song.artists.join(", ")),
 		album: pick(meta.album, song.album),
-		songwriters,
+		songwriters: dedupeCaseInsensitive(rawSongwriters),
 		extraAmllMeta: { ...meta.extraAmllMeta, ...song.amllMeta },
 	};
 }

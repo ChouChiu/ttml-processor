@@ -46,7 +46,9 @@ describe("parseLyricCredits", () => {
 			parseLyricCredits("[00:10.00]Baby: hold on\n[00:12.00]Time: 3am"),
 		).toEqual({});
 	});
+});
 
+describe("songwritersFrom", () => {
 	it("dedupes songwriters case-insensitively and trims whitespace", () => {
 		expect(
 			songwritersFrom({
@@ -98,11 +100,15 @@ describe("mergeSongMetadata", () => {
 describe("applySongMetadata", () => {
 	const fetched = song({ album: "Supernova", songwriters: ["KENZIE"] });
 
-	it("fills empty fields, preserves existing ones, and adds platform ids", () => {
+	it("fills empty fields, preserves existing ones, dedupes songwriters, and adds platform ids", () => {
 		const { meta } = sampleWorkspace();
-		const applied = applySongMetadata(meta, fetched);
+		const dirtyMeta = {
+			...meta,
+			songwriters: [" KENZIE ", "kenzie", "  ", "Dem Jointz"],
+		};
+		const applied = applySongMetadata(dirtyMeta, fetched);
 		expect(applied.album).toBe(meta.album);
-		expect(applied.songwriters).toEqual(meta.songwriters);
+		expect(applied.songwriters).toEqual(["KENZIE", "Dem Jointz"]);
 		expect(applied.extraAmllMeta).toEqual({ qqMusicId: "000JBYAP1N4s5M" });
 
 		expect(applySongMetadata({ ...meta, album: "" }, fetched).album).toBe(
@@ -111,15 +117,5 @@ describe("applySongMetadata", () => {
 		expect(
 			applySongMetadata(meta, fetched, { overwrite: true }).songwriters,
 		).toEqual(["KENZIE"]);
-	});
-
-	it("deduplicates and trims dirty songwriters during apply", () => {
-		const { meta } = sampleWorkspace();
-		const dirtyMeta = {
-			...meta,
-			songwriters: [" KENZIE ", "kenzie", "  ", "Dem Jointz"],
-		};
-		const applied = applySongMetadata(dirtyMeta, fetched);
-		expect(applied.songwriters).toEqual(["KENZIE", "Dem Jointz"]);
 	});
 });

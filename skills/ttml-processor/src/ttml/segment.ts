@@ -2,38 +2,19 @@ import type { CheerioAPI } from "cheerio";
 import { romanize as koromanize } from "koroman";
 import { pinyin } from "pinyin-pro";
 import { NON_LATIN } from "../lang";
-import type { WorkspaceLine } from "../types";
+import type { SyllableSpan, WorkspaceLine } from "../types";
 import { type Node$, ROLE, SELECTOR } from "./document";
-import { parseTimestampToMs } from "./validate";
+import { formatTimestamp, parseTimestampToMs } from "./time";
 import { escapeXml } from "./xml";
 
-export interface SyllableSpan {
-	begin: string;
-	end: string;
-	text: string;
-}
+export type { SyllableSpan };
+export { formatTimestamp };
 
 export interface SegmentLineContext {
 	translationLang: string;
 	romanLang: string;
 	romanize: boolean;
 	rawTrans: Record<string, { lead: SyllableSpan[]; bg: SyllableSpan[] }>;
-}
-
-/**
- * Formats a millisecond timestamp preserving the template's format
- * (clock MM:SS.mmm or seconds S.mmm), using exact integer arithmetic.
- */
-export function formatTimestamp(ms: number, template = "0:00.000"): string {
-	const totalMs = Math.round(ms);
-	if (template.includes(":")) {
-		const minutes = Math.floor(totalMs / 60000);
-		const remMs = totalMs % 60000;
-		const secs = Math.floor(remMs / 1000);
-		const millis = remMs % 1000;
-		return `${minutes}:${String(secs).padStart(2, "0")}.${String(millis).padStart(3, "0")}`;
-	}
-	return (totalMs / 1000).toFixed(3);
 }
 
 /**
@@ -358,18 +339,15 @@ export function rebuildSegmentedLine(
 	}
 
 	if (ctx.romanize && (transLeadSpans.length > 0 || transBgSpans.length > 0)) {
-		let tText = `<text for="${escapeXml(key)}">`;
-		for (const s of transLeadSpans) {
-			tText += `<span begin="${escapeXml(s.begin)}" end="${escapeXml(s.end)}">${escapeXml(s.text)}</span>`;
-		}
-		if (transBgSpans.length > 0) {
-			tText += '<span ttm:role="x-bg">';
-			for (const s of transBgSpans) {
-				tText += `<span begin="${escapeXml(s.begin)}" end="${escapeXml(s.end)}">${escapeXml(s.text)}</span>`;
-			}
-			tText += "</span>";
-		}
-		tText += "</text>";
-		tracks.transliterations.push(tText);
+		const renderSpan = (s: SyllableSpan) =>
+			`<span begin="${escapeXml(s.begin)}" end="${escapeXml(s.end)}">${escapeXml(s.text)}</span>`;
+		const leadMarkup = transLeadSpans.map(renderSpan).join("");
+		const bgMarkup =
+			transBgSpans.length > 0
+				? `<span ttm:role="x-bg">${transBgSpans.map(renderSpan).join("")}</span>`
+				: "";
+		tracks.transliterations.push(
+			`<text for="${escapeXml(key)}">${leadMarkup}${bgMarkup}</text>`,
+		);
 	}
 }

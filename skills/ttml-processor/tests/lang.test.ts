@@ -13,7 +13,9 @@ describe("detectSongLanguage", () => {
 		expect(detectSongLanguage(["我们一起走向未来", "Forever"])).toBe("zh");
 		expect(detectSongLanguage(["I know my worth"])).toBe("latin");
 	});
+});
 
+describe("getTtmlLangTag", () => {
 	it("maps languages to transliteration tags", () => {
 		expect(getTtmlLangTag("zh-Hans")).toBe("zh-Latn");
 		expect(getTtmlLangTag("latin")).toBe("und-Latn");
@@ -42,13 +44,10 @@ describe("romanizeOptionC", () => {
 		expect(res).not.toContain("Believe");
 	});
 
-	it("romanizes Chinese as toneless pinyin", async () => {
+	it("romanizes Chinese as toneless pinyin and infers script when omitted", async () => {
 		expect(await romanizeOptionC("我们 一起 Forever", "zh-Latn")).toBe(
 			"wo men yi qi",
 		);
-	});
-
-	it("detects the script per line when no language is preferred", async () => {
 		expect(await romanizeOptionC("我们")).toBe("wo men");
 	});
 });

@@ -59,7 +59,7 @@ bun run pipeline build song.ttml workspace.json -o completed.ttml
 
 # 5. 格式规范校验与质量检查
 bun run validate completed.ttml
-bun run test
+bun test
 bun run check
 ```
 
@@ -70,13 +70,13 @@ bun run check
 ### 1. 流水线工具 (`pipeline`)
 
 ```bash
-# 导出为轻量 JSON（缺省 -o 时输出至 stdout）
+# 导出轻量 JSON（缺省 -o 时输出至 stdout）
 bun run pipeline export <input.ttml> [-o <workspace.json>]
 
-# 从工作区 JSON 回写生成符合规范的 TTML
+# 从工作区回写生成符合规范的 TTML
 bun run pipeline build <input.ttml> <workspace.json> -o <output.ttml> [--no-roman] [--segment]
 
-# 校验 TTML 文件
+# 校验 TTML 文件规范性
 bun run pipeline validate <file.ttml>
 ```
 
@@ -85,12 +85,12 @@ bun run pipeline validate <file.ttml>
 ```bash
 bun run meta "<歌手 歌名 或 歌曲链接>" [选项]
 
-# 选项说明：
+# 核心选项：
 #   --source <qq|netease|all>   查询平台（默认: all，QQ 音乐优先，网易云补缺）
 #   --select <n>                选用候选序号（默认: 1）
 #   --apply <workspace.json>    写入工作区（仅填补空缺字段，平台 ID 始终保留）
-#   --force                     与 --apply 搭配，强制覆盖已有字段
-#   --json                      以 JSON 格式输出抓取结果
+#   --force                     强制覆盖已有字段
+#   --json                      以 JSON 格式输出结果
 ```
 
 ### 3. 曲式结构与演唱者抓取 (`genius`)
@@ -98,7 +98,7 @@ bun run meta "<歌手 歌名 或 歌曲链接>" [选项]
 ```bash
 bun run genius "<歌手 歌名 或 Genius URL>" [选项]
 
-# 选项说明：
+# 核心选项：
 #   --ttml         输出可直接复用的 <ttm:agent> 与 <div> 骨架
 #   --lyrics, -l   打印带演唱者归属的逐行歌词
 #   --select <n>   选用搜索候选序号（默认: 1）
@@ -111,7 +111,7 @@ bun run genius "<歌手 歌名 或 Genius URL>" [选项]
 bun run validate <file.ttml>
 ```
 
-检查项包括：AMLL 解析与分屏状态、命名空间完整性、元数据及词曲作者（`<songwriters>`）署名、键名全局唯一性、时间戳单调性、行内与集中双轨翻译 1:1 覆盖、Option C 音译合规性与 `x-bg` 隔离性。
+全量校验项：AMLL 引擎解析与分屏状态、命名空间完整性、元数据及词曲作者（`<songwriters>`）署名、键名全局唯一性、时间戳单调性、双轨翻译 1:1 覆盖、Option C 音译合规性与 `x-bg` 隔离封装。
 
 ---
 
@@ -139,6 +139,7 @@ bun run validate <file.ttml>
         │   │   ├── document.ts  # DOM 查询与常量定义
         │   │   ├── export.ts    # 工作区轻量提取
         │   │   ├── segment.ts   # 音节切分、时间戳细分与段落重构
+        │   │   ├── time.ts      # 时间戳解析、格式化与倒流检测
         │   │   ├── validate.ts  # 双引擎规范校验
         │   │   └── xml.ts       # XML 转义与排版美化
         │   ├── genius/          # Genius 结构与歌词抓取

@@ -1,5 +1,6 @@
 import type { CheerioAPI } from "cheerio";
 import { detectSongLanguage, getTtmlLangTag } from "../lang";
+import { dedupeCaseInsensitive } from "../metadata/credits";
 import type { WorkspaceData, WorkspaceLine, WorkspaceMeta } from "../types";
 import {
 	AMLL_META_FIELDS,
@@ -46,14 +47,11 @@ function readHeader($: CheerioAPI): HeaderMeta {
 		if (id) header.agents[id] = textOf($(el).find("ttm\\:name, name")) || id;
 	});
 
-	const seenSongwriters = new Set<string>();
-	metadata.find(SELECTOR.songwriter).each((_, el) => {
-		const name = textOf($(el)).trim();
-		if (name && !seenSongwriters.has(name.toLowerCase())) {
-			seenSongwriters.add(name.toLowerCase());
-			header.songwriters?.push(name);
-		}
-	});
+	const rawWriters = metadata
+		.find(SELECTOR.songwriter)
+		.toArray()
+		.map((el) => textOf($(el)));
+	header.songwriters = dedupeCaseInsensitive(rawWriters);
 
 	return header;
 }

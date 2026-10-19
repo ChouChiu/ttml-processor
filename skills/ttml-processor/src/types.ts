@@ -25,6 +25,19 @@ export interface WorkspaceData {
 	lines: WorkspaceLine[];
 }
 
+export interface BuildOptions {
+	/** Generate Option C transliterations (default true) */
+	romanize?: boolean;
+	/** Segment multi-character non-Latin words into syllables with 1:1 timed transliterations (default false) */
+	segment?: boolean;
+}
+
+export interface SyllableSpan {
+	begin: string;
+	end: string;
+	text: string;
+}
+
 export interface ValidationResult {
 	/** False when any blocking error was found */
 	valid: boolean;

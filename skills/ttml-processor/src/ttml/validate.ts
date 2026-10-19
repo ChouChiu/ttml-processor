@@ -17,6 +17,9 @@ import {
 	sungText,
 	textOf,
 } from "./document";
+import { isReversed, parseTimestampToMs } from "./time";
+
+export { parseTimestampToMs };
 
 class Report {
 	readonly errors: string[] = [];
@@ -42,19 +45,27 @@ class Report {
 	}
 }
 
-export function parseTimestampToMs(value?: string): number | null {
-	if (!value) return null;
-	const parts = value.trim().replace(/s$/, "").split(":");
-	if (parts.length > 3 || !parts.every((p) => /^\d+(?:\.\d+)?$/.test(p))) {
-		return null;
+/** Counts occurrences of keys and warns on duplicate entries */
+function warnDuplicates<T>(
+	items: Iterable<T>,
+	getKey: (item: T) => string | undefined | null,
+	formatMsg: (key: string, count: number) => string,
+	report: Report,
+	caseInsensitive = false,
+): Map<string, number> {
+	const counts = new Map<string, number>();
+	for (const item of items) {
+		const raw = getKey(item)?.trim();
+		if (!raw) continue;
+		const key = caseInsensitive ? raw.toLowerCase() : raw;
+		counts.set(key, (counts.get(key) ?? 0) + 1);
 	}
-	return parts.reduce((total, p) => total * 60 + Number(p), 0) * 1000;
-}
-
-function isReversed(begin?: string, end?: string): boolean {
-	const b = parseTimestampToMs(begin);
-	const e = parseTimestampToMs(end);
-	return b !== null && e !== null && b > e;
+	for (const [key, count] of counts.entries()) {
+		if (count > 1) {
+			report.warn(formatMsg(key, count));
+		}
+	}
+	return counts;
 }
 
 function checkAmllEngine(xml: string, report: Report): void {
@@ -113,45 +124,35 @@ function checkMetadata($: CheerioAPI, report: Report): void {
 	}
 
 	// AMLL metadata checks & duplicate key detection
-	const amllKeys = new Map<string, number>();
-	metadata.find(SELECTOR.amllMeta).each((_, el) => {
+	const amllEls = metadata.find(SELECTOR.amllMeta).toArray();
+	for (const el of amllEls) {
 		const key = $(el).attr("key")?.trim();
-		if (!key) return;
-		amllKeys.set(key, (amllKeys.get(key) ?? 0) + 1);
-		const val = attrOf($(el), "value")?.trim();
-		if (!val) {
+		if (key && !attrOf($(el), "value")?.trim()) {
 			report.warn(`Empty value for <amll:meta key="${key}">`);
 		}
-	});
-
-	for (const [key, count] of amllKeys.entries()) {
-		if (count > 1) {
-			report.warn(
-				`Duplicate <amll:meta> entry for key='${key}' (${count} times)`,
-			);
-		}
 	}
+	const amllCounts = warnDuplicates(
+		amllEls,
+		(el) => $(el).attr("key"),
+		(key, count) =>
+			`Duplicate <amll:meta> entry for key='${key}' (${count} times)`,
+		report,
+	);
 
-	if (!amllKeys.has("musicName")) {
+	if (!amllCounts.has("musicName")) {
 		report.warn('Missing essential <amll:meta key="musicName"> in metadata');
 	}
-	if (!amllKeys.has("artists")) {
+	if (!amllCounts.has("artists")) {
 		report.warn('Missing essential <amll:meta key="artists"> in metadata');
 	}
 
 	// AMLL vocals duplicate key detection
-	const vocalKeys = new Map<string, number>();
-	metadata.find("amll\\:vocals vocal, vocals vocal").each((_, el) => {
-		const key = $(el).attr("key")?.trim();
-		if (key) {
-			vocalKeys.set(key, (vocalKeys.get(key) ?? 0) + 1);
-		}
-	});
-	for (const [key, count] of vocalKeys.entries()) {
-		if (count > 1) {
-			report.warn(`Duplicate vocal key='${key}' in <amll:vocals>`);
-		}
-	}
+	warnDuplicates(
+		metadata.find("amll\\:vocals vocal, vocals vocal").toArray(),
+		(el) => $(el).attr("key"),
+		(key) => `Duplicate vocal key='${key}' in <amll:vocals>`,
+		report,
+	);
 }
 
 function checkSongwriters($: CheerioAPI, report: Report): void {
@@ -169,7 +170,9 @@ function checkSongwriters($: CheerioAPI, report: Report): void {
 		return;
 	}
 
-	const writers = songwritersBlock.find("songwriter, itunes\\:songwriter");
+	const writers = songwritersBlock
+		.find("songwriter, itunes\\:songwriter")
+		.toArray();
 	if (writers.length === 0) {
 		report.warn(
 			"Empty <songwriters> block in <iTunesMetadata>; at least one <songwriter> is required",
@@ -177,26 +180,26 @@ function checkSongwriters($: CheerioAPI, report: Report): void {
 		return;
 	}
 
-	const seenWriters = new Map<string, number>();
 	let validCount = 0;
-	writers.each((_, el) => {
-		const name = textOf($(el)).trim();
-		if (!name) {
+	for (const el of writers) {
+		if (!textOf($(el)).trim()) {
 			report.warn("Empty <songwriter> entry in <songwriters>");
-			return;
+		} else {
+			validCount++;
 		}
-		validCount++;
-		const lower = name.toLowerCase();
-		const count = (seenWriters.get(lower) ?? 0) + 1;
-		seenWriters.set(lower, count);
-		if (count === 2) {
-			report.warn(`Duplicate songwriter '${name}' in <songwriters>`);
-		}
-	});
+	}
 
 	if (validCount === 0) {
 		report.warn("No valid songwriter names found in <songwriters>");
 	}
+
+	warnDuplicates(
+		writers,
+		(el) => textOf($(el)),
+		(name) => `Duplicate songwriter '${name}' in <songwriters>`,
+		report,
+		true,
+	);
 }
 
 function checkSections($: CheerioAPI, report: Report): void {
@@ -243,29 +246,27 @@ function checkSections($: CheerioAPI, report: Report): void {
 }
 
 function checkAgents($: CheerioAPI, lines: Node$[], report: Report): void {
+	const agentEls = $("head metadata").find(SELECTOR.agent).toArray();
 	const declared = new Set<string>();
-	const seenAgents = new Map<string, number>();
-	$("head metadata")
-		.find(SELECTOR.agent)
-		.each((_, el) => {
-			const id = attrOf($(el), "xml:id", "id");
-			if (!id) return;
-			seenAgents.set(id, (seenAgents.get(id) ?? 0) + 1);
-			declared.add(id);
-			if ($(el).attr("type") === "person") {
-				report.warn(
-					`Duet alert: agent '${id}' declared as type='person'; use type='group' for single-column scroll`,
-				);
-			}
-		});
 
-	for (const [id, count] of seenAgents.entries()) {
-		if (count > 1) {
+	for (const el of agentEls) {
+		const id = attrOf($(el), "xml:id", "id");
+		if (!id) continue;
+		declared.add(id);
+		if ($(el).attr("type") === "person") {
 			report.warn(
-				`Duplicate agent declaration with xml:id='${id}' (${count} times)`,
+				`Duet alert: agent '${id}' declared as type='person'; use type='group' for single-column scroll`,
 			);
 		}
 	}
+
+	warnDuplicates(
+		agentEls,
+		(el) => attrOf($(el), "xml:id", "id"),
+		(id, count) =>
+			`Duplicate agent declaration with xml:id='${id}' (${count} times)`,
+		report,
+	);
 
 	lines.forEach((p, i) => {
 		const agent = lineAgent(p);
@@ -368,32 +369,23 @@ function checkCentralTranslations(
 	totalLines: number,
 	report: Report,
 ): number {
-	const keys = new Set<string>();
-	const seenKeys = new Map<string, number>();
-	$("head metadata")
+	const transEls = $("head metadata")
 		.find(SELECTOR.centralTranslation)
-		.each((_, el) => {
-			const key = $(el).attr("for");
-			if (key) {
-				keys.add(key);
-				seenKeys.set(key, (seenKeys.get(key) ?? 0) + 1);
-			}
-		});
+		.toArray();
+	const counts = warnDuplicates(
+		transEls,
+		(el) => $(el).attr("for"),
+		(key, count) =>
+			`Duplicate centralized translation entry for line '${key}' (${count} times)`,
+		report,
+	);
 
-	for (const [key, count] of seenKeys.entries()) {
-		if (count > 1) {
-			report.warn(
-				`Duplicate centralized translation entry for line '${key}' (${count} times)`,
-			);
-		}
-	}
-
-	if (keys.size < totalLines) {
+	if (counts.size < totalLines) {
 		report.warn(
-			`Track B centralized translations (${keys.size}) < total lines (${totalLines})`,
+			`Track B centralized translations (${counts.size}) < total lines (${totalLines})`,
 		);
 	}
-	return keys.size;
+	return counts.size;
 }
 
 function checkCentralTransliterations(
@@ -407,29 +399,29 @@ function checkCentralTransliterations(
 		sungMap.set(key, sungText(p, $));
 	});
 
-	const seenTranslitKeys = new Map<string, number>();
-	$(
+	const transEls = $(
 		"head metadata transliterations transliteration text, head metadata itunes\\:transliterations itunes\\:transliteration itunes\\:text",
-	).each((_, el) => {
+	).toArray();
+
+	for (const el of transEls) {
 		const key = $(el).attr("for");
-		if (!key) return;
-		seenTranslitKeys.set(key, (seenTranslitKeys.get(key) ?? 0) + 1);
+		if (!key) continue;
 		const sung = sungMap.get(key);
-		if (!sung) return;
-
-		const violation = findOptionCViolation(sung, $(el).text());
-		if (violation) {
-			report.warn(`Option C: ${violation} in transliteration '${key}'`);
-		}
-	});
-
-	for (const [key, count] of seenTranslitKeys.entries()) {
-		if (count > 1) {
-			report.warn(
-				`Duplicate centralized transliteration entry for line '${key}' (${count} times)`,
-			);
+		if (sung) {
+			const violation = findOptionCViolation(sung, $(el).text());
+			if (violation) {
+				report.warn(`Option C: ${violation} in transliteration '${key}'`);
+			}
 		}
 	}
+
+	warnDuplicates(
+		transEls,
+		(el) => $(el).attr("for"),
+		(key, count) =>
+			`Duplicate centralized transliteration entry for line '${key}' (${count} times)`,
+		report,
+	);
 }
 
 export function validateTtml(xml: string): ValidationResult {

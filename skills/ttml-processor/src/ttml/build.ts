@@ -1,8 +1,15 @@
 import type { CheerioAPI } from "cheerio";
 import { type AnyNode, isTag, isText } from "domhandler";
 import { detectSongLanguage, getTtmlLangTag } from "../lang";
+import { dedupeCaseInsensitive } from "../metadata/credits";
 import { romanizeOptionC } from "../romanizer";
-import type { WorkspaceData, WorkspaceLine, WorkspaceMeta } from "../types";
+import type {
+	BuildOptions,
+	SyllableSpan,
+	WorkspaceData,
+	WorkspaceLine,
+	WorkspaceMeta,
+} from "../types";
 import {
 	AMLL_META_FIELDS,
 	agentElement,
@@ -17,19 +24,10 @@ import {
 	SELECTOR,
 	splitAgentIds,
 } from "./document";
-import {
-	extractRawTransliterations,
-	rebuildSegmentedLine,
-	type SyllableSpan,
-} from "./segment";
+import { extractRawTransliterations, rebuildSegmentedLine } from "./segment";
 import { escapeXml, formatTtml, unescapeXml } from "./xml";
 
-export interface BuildOptions {
-	/** Generate Option C transliterations (default true) */
-	romanize?: boolean;
-	/** Segment multi-character non-Latin words into syllables with 1:1 timed transliterations (default false) */
-	segment?: boolean;
-}
+export type { BuildOptions };
 
 interface LineContext {
 	translationLang: string;
@@ -138,15 +136,7 @@ function resetItunesMetadata(metadata: Node$, songwriters?: string[]): Node$ {
 
 	if (songwriters && songwriters.length > 0) {
 		itunes.find("songwriters, itunes\\:songwriters").remove();
-		const seen = new Set<string>();
-		const unique: string[] = [];
-		for (const name of songwriters) {
-			const trimmed = name.trim();
-			if (trimmed && !seen.has(trimmed.toLowerCase())) {
-				seen.add(trimmed.toLowerCase());
-				unique.push(trimmed);
-			}
-		}
+		const unique = dedupeCaseInsensitive(songwriters);
 		if (unique.length > 0) {
 			const tags = unique.map(
 				(name) => `<songwriter>${escapeXml(name)}</songwriter>`,
