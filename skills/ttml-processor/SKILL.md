@@ -133,6 +133,9 @@ Adhere strictly to the literary quality guidelines:
 7. **Timing Guardrails**:
    - Never modify syllable timestamps (`<span begin="..." end="...">`) or line timestamps.
    - The pipeline handles all reconstruction, preserving trailing spaces (`"word "`) for smooth karaoke highlights.
+8. **Insert Missing Word Spaces**:
+   - When adjacent syllable spans of two separate words have no space between them (e.g., `<span>Imma</span><span>get</span><span>'em</span>` rendering as `Immaget'em`), append a trailing space to the earlier word's span text (`Imma `, `get `)
+   - Only add the space inside the span text; never touch timestamps, never split or merge spans, and never add spaces between syllables of the same word or between CJK characters
 
 ---
 
