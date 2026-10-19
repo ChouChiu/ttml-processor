@@ -4,8 +4,6 @@
 
 支持歌词工作区提取与回写、歌曲元数据抓取、Option C 音译、音节切分与卡拉OK高亮、双轨翻译生成、AMLL 防分屏处理与格式规范校验。
 
----
-
 ## 安装与快速上手
 
 ### 作为 Agent Skill 安装
@@ -26,8 +24,6 @@ cd ttml-lyrics-processor
 bun install
 ```
 
----
-
 ## 核心特性
 
 | 领域 | 功能特性 | 说明 |
@@ -40,7 +36,6 @@ bun install
 | **结构组织** | **Genius 曲式与和声隔离** | 自动生成 `itunes:songPart` 容器与时间对齐；背景和声（`x-bg`）翻译与音译完全隔离封装 |
 | **高保真排版** | **双引擎校验与保真排版** | 结合 AMLL 官方引擎与 Cheerio 语法校验；保护逐字时间戳尾随空格，XML 实体安全转义 |
 
----
 
 ## 5 步标准工作流程
 
@@ -62,8 +57,6 @@ bun run validate completed.ttml
 bun test
 bun run check
 ```
-
----
 
 ## 命令行工具速查
 
@@ -113,7 +106,6 @@ bun run validate <file.ttml>
 
 全量校验项：AMLL 引擎解析与分屏状态、命名空间完整性、元数据及词曲作者（`<songwriters>`）署名、键名全局唯一性、时间戳单调性、双轨翻译 1:1 覆盖、Option C 音译合规性与 `x-bg` 隔离封装。
 
----
 
 ## 项目结构
 
@@ -147,7 +139,6 @@ bun run validate <file.ttml>
         └── tests/               # 单元测试与端到端回归测试套件
 ```
 
----
 
 ## 参考链接
 
@@ -155,7 +146,6 @@ bun run validate <file.ttml>
 - [W3C TTML 规范](https://www.w3.org/TR/ttml1/)
 - [Agent Skills 规范](https://skills.sh)
 
----
 
 ## 许可证
 
