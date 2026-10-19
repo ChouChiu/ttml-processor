@@ -26,13 +26,13 @@ const ROLE_ALIASES: Record<string, string> = {
 const SONGWRITER_ROLES = new Set(["作词", "作曲"]);
 
 /**
- * Unknown CJK labels (和声, 混音, ...) are kept verbatim; unknown Latin labels are
- * rejected so a lyric line like "Baby: ..." is never mistaken for a credit
+ * Unknown non-ASCII labels (和声, 混音, ...) are kept verbatim; unknown Latin labels are
+ * rejected so a lyric line like "Baby: ..." is never mistaken for a credit.
  */
 function normalizeRole(label: string): string | null {
 	const role = ROLE_ALIASES[label.toLowerCase()];
 	if (role) return role;
-	return /[\u0080-￿]/.test(label) ? label : null;
+	return /[\u0080-\uFFFF]/.test(label) ? label : null;
 }
 
 function splitNames(value: string): string[] {

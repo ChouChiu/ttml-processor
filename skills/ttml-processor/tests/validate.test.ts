@@ -82,56 +82,19 @@ describe("validateTtml", () => {
 		).toBe(true);
 	});
 
-	it("warns on duplicate songwriters", () => {
-		const res = validateTtml(
-			singleLine({
-				itunes:
-					'<iTunesMetadata xmlns="http://music.apple.com/lyric-ttml-internal"><songwriters><songwriter>KENZIE</songwriter><songwriter>kenzie</songwriter></songwriters><translations><translation xml:lang="zh-Hans"><text for="L1">花开</text></translation></translations></iTunesMetadata>',
-			}),
-		);
-		expect(
-			res.warnings.some((w) => w.includes("Duplicate songwriter 'kenzie'")),
-		).toBe(true);
-	});
-
-	it("warns on duplicate agent declarations", () => {
-		const duplicateAgents =
-			AGENT_V1 +
-			'\n<ttm:agent type="group" xml:id="v1"><ttm:name type="full">Singer Clone</ttm:name></ttm:agent>';
-		const res = validateTtml(singleLine({ agents: duplicateAgents }));
-		expect(
-			res.warnings.some((w) =>
-				w.includes("Duplicate agent declaration with xml:id='v1'"),
-			),
-		).toBe(true);
-	});
-
-	it("warns on duplicate line keys", () => {
-		const body = `
-<div itunes:songPart="Verse" begin="0:10.000" end="0:20.000">
-  <p begin="0:10.000" end="0:15.000" itunes:key="L1" ttm:agent="v1"><span begin="0:10.000" end="0:15.000">One</span><span ttm:role="x-translation" xml:lang="zh-Hans">一</span></p>
-  <p begin="0:15.000" end="0:20.000" itunes:key="L1" ttm:agent="v1"><span begin="0:15.000" end="0:20.000">Two</span><span ttm:role="x-translation" xml:lang="zh-Hans">二</span></p>
-</div>`;
-		const res = validateTtml(ttml(META_BASE + AGENT_V1 + TRACK_B("一"), body));
-		expect(
-			res.warnings.some((w) => w.includes("Duplicate line key 'L1'")),
-		).toBe(true);
-	});
-
-	it("warns on duplicate AMLL metadata keys", () => {
-		const duplicateAmll = `${META_BASE}\n<amll:meta key="musicName" value="Another Title"/>`;
-		const res = validateTtml(singleLine({ meta: duplicateAmll }));
-		expect(
-			res.warnings.some((w) =>
-				w.includes("Duplicate <amll:meta> entry for key='musicName'"),
-			),
-		).toBe(true);
-	});
-
-	it("warns on duplicate centralized translations and transliterations", () => {
-		const itunesWithDupes = `
+	it("warns on duplicate declarations across metadata, agents, lines, and tracks", () => {
+		const meta = `
+<ttm:title>Sample Song</ttm:title>
+<amll:meta key="musicName" value="Sample Song"/>
+<amll:meta key="musicName" value="Duplicate Title"/>
+<amll:meta key="artists" value="Singer"/>
+<ttm:agent type="group" xml:id="v1"><ttm:name type="full">Singer</ttm:name></ttm:agent>
+<ttm:agent type="group" xml:id="v1"><ttm:name type="full">Duplicate Singer</ttm:name></ttm:agent>
 <iTunesMetadata xmlns="http://music.apple.com/lyric-ttml-internal">
-  <songwriters><songwriter>Writer</songwriter></songwriters>
+  <songwriters>
+    <songwriter>KENZIE</songwriter>
+    <songwriter>kenzie</songwriter>
+  </songwriters>
   <translations>
     <translation xml:lang="zh-Hans">
       <text for="L1">花开</text>
@@ -145,7 +108,28 @@ describe("validateTtml", () => {
     </transliteration>
   </transliterations>
 </iTunesMetadata>`;
-		const res = validateTtml(singleLine({ itunes: itunesWithDupes }));
+		const body = `
+<div itunes:songPart="Verse" begin="0:10.000" end="0:20.000">
+  <p begin="0:10.000" end="0:15.000" itunes:key="L1" ttm:agent="v1"><span begin="0:10.000" end="0:15.000">One</span><span ttm:role="x-translation" xml:lang="zh-Hans">一</span></p>
+  <p begin="0:15.000" end="0:20.000" itunes:key="L1" ttm:agent="v1"><span begin="0:15.000" end="0:20.000">Two</span><span ttm:role="x-translation" xml:lang="zh-Hans">二</span></p>
+</div>`;
+		const res = validateTtml(ttml(meta, body));
+		expect(
+			res.warnings.some((w) => w.includes("Duplicate songwriter 'kenzie'")),
+		).toBe(true);
+		expect(
+			res.warnings.some((w) =>
+				w.includes("Duplicate agent declaration with xml:id='v1'"),
+			),
+		).toBe(true);
+		expect(
+			res.warnings.some((w) =>
+				w.includes("Duplicate <amll:meta> entry for key='musicName'"),
+			),
+		).toBe(true);
+		expect(
+			res.warnings.some((w) => w.includes("Duplicate line key 'L1'")),
+		).toBe(true);
 		expect(
 			res.warnings.some((w) =>
 				w.includes("Duplicate centralized translation entry for line 'L1'"),

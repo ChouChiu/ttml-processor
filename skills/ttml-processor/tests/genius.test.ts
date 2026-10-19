@@ -9,32 +9,30 @@ import { generateTtmlSkeleton } from "../src/genius/skeleton";
 import type { GeniusHit } from "../src/types";
 
 describe("parseHeaderBracket", () => {
-	it("maps specific part names before generic ones", () => {
+	it("maps song parts, extracts vocalists, and ignores non-lyric headers", () => {
+		// Part mapping priority
 		expect(mapToItunesPart("Pre-Chorus")).toBe("Pre-Chorus");
 		expect(mapToItunesPart("Post Chorus")).toBe("Post-Chorus");
 		expect(mapToItunesPart("Hook")).toBe("Chorus");
 		expect(mapToItunesPart("Something else")).toBe("Verse");
-	});
 
-	it("splits a part header into part and singers", () => {
+		// Header with singers
 		expect(parseHeaderBracket("Chorus: Karina, Winter & Ningning")).toEqual({
 			label: "Chorus",
 			part: "Chorus",
 			singers: ["Karina", "Winter", "Ningning"],
 		});
 		expect(parseHeaderBracket("Bridge: Everyone")?.singers).toEqual(["All"]);
-	});
 
-	it("treats a bare name as a singer switch", () => {
+		// Singer switch without new section
 		expect(parseHeaderBracket("Karina")).toEqual({
 			label: "Karina",
 			part: null,
 			singers: ["Karina"],
 		});
 		expect(parseHeaderBracket("All")?.singers).toEqual(["All"]);
-	});
 
-	it("ignores non-lyric headers", () => {
+		// Non-lyric headers
 		expect(parseHeaderBracket("Supernova Lyrics")).toBeNull();
 	});
 });

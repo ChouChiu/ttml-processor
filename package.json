@@ -1,0 +1,18 @@
+{
+	"name": "ttml-lyrics-processor",
+	"version": "1.0.0",
+	"private": true,
+	"workspaces": [
+		"skills/*"
+	],
+	"scripts": {
+		"test": "bun test --cwd skills/ttml-processor",
+		"typecheck": "bun run --cwd skills/ttml-processor typecheck",
+		"check": "bun run --cwd skills/ttml-processor check",
+		"format": "bun run --cwd skills/ttml-processor format",
+		"pipeline": "bun skills/ttml-processor/scripts/ttml_pipeline.ts",
+		"genius": "bun skills/ttml-processor/scripts/fetch_genius_parts.ts",
+		"meta": "bun skills/ttml-processor/scripts/fetch_song_meta.ts",
+		"validate": "bun skills/ttml-processor/scripts/validate_ttml.ts"
+	}
+}

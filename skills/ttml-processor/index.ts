@@ -6,6 +6,7 @@ export * from "./src/metadata";
 export * from "./src/romanizer";
 export * from "./src/ttml/build";
 export * from "./src/ttml/export";
+export * from "./src/ttml/segment";
 export * from "./src/ttml/validate";
 export { escapeXml, formatTtml, unescapeXml } from "./src/ttml/xml";
 export type * from "./src/types";

@@ -417,24 +417,9 @@ function checkCentralTransliterations(
 		const sung = sungMap.get(key);
 		if (!sung) return;
 
-		// Option C rule 1: Pure Latin lines should omit transliterations completely
-		if (!NON_LATIN.test(sung)) {
-			report.warn(
-				`Option C: pure Latin line '${key}' should omit transliteration: "${sung}"`,
-			);
-			return;
-		}
-
-		// Option C rule 2: Latin words must be stripped from transliterations
-		const transText = $(el).text();
-		const romanWords = new Set(normalizedWords(transText));
-		const leaked = normalizedWords(sung).filter(
-			(w) => w.length >= 3 && /^[a-z0-9_-]+$/.test(w) && romanWords.has(w),
-		);
-		if (leaked.length > 0) {
-			report.warn(
-				`Option C: Latin words [${leaked.join(", ")}] not stripped from transliteration '${key}'`,
-			);
+		const violation = findOptionCViolation(sung, $(el).text());
+		if (violation) {
+			report.warn(`Option C: ${violation} in transliteration '${key}'`);
 		}
 	});
 

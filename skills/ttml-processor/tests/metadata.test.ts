@@ -25,17 +25,17 @@ const song = (overrides: Partial<SongMetadata>): SongMetadata => ({
 });
 
 describe("parseLyricCredits", () => {
-	it("reads QQ and NetEase header styles into canonical roles", () => {
+	it("reads QQ and NetEase header styles into canonical roles without duplicates", () => {
 		const qq =
 			"[ti:Supernova]\n[ar:aespa]\n[00:00.17]Supernova - aespa\n[00:00.66]词：KENZIE\n[00:00.81]曲：KENZIE/Paris Alexa\n[00:03.15]I'm like some kind of Supernova";
 		const netease =
-			"[00:00.00] 作词 : KENZIE\n[00:01.00] 作曲 : KENZIE/Dem Jointz\n[00:02.00] Producer : Dem Jointz";
+			"[00:00.00] 作词 : KENZIE\n[00:01.00] 作词 : Writer B / KENZIE\n[00:02.00] 作曲 : KENZIE/Dem Jointz\n[00:03.00] Producer : Dem Jointz";
 		expect(parseLyricCredits(qq)).toEqual({
 			作词: ["KENZIE"],
 			作曲: ["KENZIE", "Paris Alexa"],
 		});
 		expect(parseLyricCredits(netease)).toEqual({
-			作词: ["KENZIE"],
+			作词: ["KENZIE", "Writer B"],
 			作曲: ["KENZIE", "Dem Jointz"],
 			制作人: ["Dem Jointz"],
 		});
@@ -45,15 +45,6 @@ describe("parseLyricCredits", () => {
 		expect(
 			parseLyricCredits("[00:10.00]Baby: hold on\n[00:12.00]Time: 3am"),
 		).toEqual({});
-	});
-
-	it("accumulates multiple credit lines for the same role without duplicates", () => {
-		const lrc =
-			"[00:00.00] 作词 : Writer A\n[00:01.00] 作词 : Writer B / Writer A\n[00:02.00] 作曲 : Composer C";
-		expect(parseLyricCredits(lrc)).toEqual({
-			作词: ["Writer A", "Writer B"],
-			作曲: ["Composer C"],
-		});
 	});
 
 	it("dedupes songwriters case-insensitively and trims whitespace", () => {
@@ -107,16 +98,13 @@ describe("mergeSongMetadata", () => {
 describe("applySongMetadata", () => {
 	const fetched = song({ album: "Supernova", songwriters: ["KENZIE"] });
 
-	it("keeps existing values but always adds platform ids", () => {
+	it("fills empty fields, preserves existing ones, and adds platform ids", () => {
 		const { meta } = sampleWorkspace();
 		const applied = applySongMetadata(meta, fetched);
 		expect(applied.album).toBe(meta.album);
 		expect(applied.songwriters).toEqual(meta.songwriters);
 		expect(applied.extraAmllMeta).toEqual({ qqMusicId: "000JBYAP1N4s5M" });
-	});
 
-	it("fills empty fields and overwrites when forced", () => {
-		const { meta } = sampleWorkspace();
 		expect(applySongMetadata({ ...meta, album: "" }, fetched).album).toBe(
 			"Supernova",
 		);

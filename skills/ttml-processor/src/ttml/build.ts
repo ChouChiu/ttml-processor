@@ -18,10 +18,9 @@ import {
 	splitAgentIds,
 } from "./document";
 import {
-	assignTrailingSpaces,
 	extractRawTransliterations,
+	rebuildSegmentedLine,
 	type SyllableSpan,
-	segmentSpan,
 } from "./segment";
 import { escapeXml, formatTtml, unescapeXml } from "./xml";
 
@@ -300,6 +299,25 @@ function applyWordSpaces(
 	}
 }
 
+async function processStandardLine(
+	p: Node$,
+	line: WorkspaceLine,
+	ctx: LineContext,
+	tracks: CentralTracks,
+	$: CheerioAPI,
+): Promise<void> {
+	applyWordSpaces(p, line.text, $);
+	const bgVocal = p.find(SELECTOR.bg).first();
+	if (bgVocal.length > 0) applyWordSpaces(bgVocal, line.bg_text, $);
+
+	const { translation, roman } = await annotateLine(p, line, ctx);
+	const key = lineKey(p) ?? line.key;
+	const entry = (text: string) =>
+		`<text for="${escapeXml(key)}">${escapeXml(text)}</text>`;
+	if (translation) tracks.translations.push(entry(translation));
+	if (roman) tracks.transliterations.push(entry(roman));
+}
+
 /** Regroups every <p> into one songPart <div> per run of consecutive lines sharing a part */
 async function rebuildBody(
 	$: CheerioAPI,
@@ -332,187 +350,11 @@ async function rebuildBody(
 				text: "",
 				translation: "",
 			};
+
 		if (ctx.segment) {
-			const rt = ctx.rawTrans[key] || { lead: [], bg: [] };
-
-			// Extract lead spans
-			const leadSpans: SyllableSpan[] = [];
-			p.children("span")
-				.not(
-					`[ttm\\:role='${ROLE.bg}'], [ttm\\:role='${ROLE.translation}'], [ttm\\:role='${ROLE.roman}']`,
-				)
-				.each((_, s) => {
-					leadSpans.push({
-						begin: $(s).attr("begin") || "",
-						end: $(s).attr("end") || "",
-						text: $(s).text(),
-					});
-				});
-
-			// Extract bg spans
-			const bgEl = p.find(SELECTOR.bg).first();
-			const bgSpans: SyllableSpan[] = [];
-			if (bgEl.length > 0) {
-				const inner = bgEl
-					.find("span")
-					.not(
-						`[ttm\\:role='${ROLE.translation}'], [ttm\\:role='${ROLE.roman}']`,
-					);
-				if (inner.length > 0) {
-					inner.each((_, s) => {
-						bgSpans.push({
-							begin: $(s).attr("begin") || "",
-							end: $(s).attr("end") || "",
-							text: $(s).text(),
-						});
-					});
-				} else {
-					bgSpans.push({
-						begin: bgEl.attr("begin") || "",
-						end: bgEl.attr("end") || "",
-						text: bgEl.text(),
-					});
-				}
-			}
-
-			// Segment spans
-			const segLeadSpans: SyllableSpan[] = [];
-			const transLeadSpans: SyllableSpan[] = [];
-			for (let sIdx = 0; sIdx < leadSpans.length; sIdx++) {
-				const span = leadSpans[sIdx];
-				if (!span) continue;
-				const res = segmentSpan(span, rt.lead[sIdx], ctx.romanLang);
-				segLeadSpans.push(...res.body);
-				transLeadSpans.push(...res.trans);
-			}
-
-			const segBgSpans: SyllableSpan[] = [];
-			const transBgSpans: SyllableSpan[] = [];
-			for (let sIdx = 0; sIdx < bgSpans.length; sIdx++) {
-				const span = bgSpans[sIdx];
-				if (!span) continue;
-				const res = segmentSpan(span, rt.bg[sIdx], ctx.romanLang);
-				segBgSpans.push(...res.body);
-				transBgSpans.push(...res.trans);
-			}
-
-			// Assign trailing spaces based on reference text
-			if (line.text) {
-				assignTrailingSpaces(segLeadSpans, line.text);
-			}
-			if (line.bg_text) {
-				assignTrailingSpaces(segBgSpans, line.bg_text);
-			}
-
-			// Mirror trailing spaces to transliteration spans
-			for (const tSpan of transLeadSpans) {
-				const matchingLead = segLeadSpans.find(
-					(b) => b.begin === tSpan.begin && b.end === tSpan.end,
-				);
-				if (matchingLead?.text.endsWith(" ")) {
-					tSpan.text = `${tSpan.text.trim()} `;
-				} else {
-					tSpan.text = tSpan.text.trim();
-				}
-			}
-			for (const tSpan of transBgSpans) {
-				const matchingBg = segBgSpans.find(
-					(b) => b.begin === tSpan.begin && b.end === tSpan.end,
-				);
-				if (matchingBg?.text.endsWith(" ")) {
-					tSpan.text = `${tSpan.text.trim()} `;
-				} else {
-					tSpan.text = tSpan.text.trim();
-				}
-			}
-
-			// Parentheses on bg spans
-			if (segBgSpans.length > 0 && segBgSpans[0]) {
-				if (!segBgSpans[0].text.startsWith("(")) {
-					segBgSpans[0].text = `(${segBgSpans[0].text}`;
-				}
-				const lastBg = segBgSpans[segBgSpans.length - 1];
-				if (lastBg) {
-					const endsWithSpace = lastBg.text.endsWith(" ");
-					const trimmed = lastBg.text.trim();
-					if (!trimmed.endsWith(")")) {
-						lastBg.text = `${trimmed})${endsWithSpace ? " " : ""}`;
-					}
-				}
-			}
-			if (transBgSpans.length > 0 && transBgSpans[0]) {
-				if (!transBgSpans[0].text.startsWith("(")) {
-					transBgSpans[0].text = `(${transBgSpans[0].text}`;
-				}
-				const lastTransBg = transBgSpans[transBgSpans.length - 1];
-				if (lastTransBg) {
-					const endsWithSpace = lastTransBg.text.endsWith(" ");
-					const trimmed = lastTransBg.text.trim();
-					if (!trimmed.endsWith(")")) {
-						lastTransBg.text = `${trimmed})${endsWithSpace ? " " : ""}`;
-					}
-				}
-			}
-
-			// Clear and populate p
-			p.empty();
-			if (line.agent) p.attr("ttm:agent", escapeXml(line.agent));
-			for (const s of segLeadSpans) {
-				p.append(
-					`<span begin="${escapeXml(s.begin)}" end="${escapeXml(s.end)}">${escapeXml(s.text)}</span>`,
-				);
-			}
-			if (segBgSpans.length > 0) {
-				const bgMarkupParts = segBgSpans.map(
-					(s) =>
-						`<span begin="${escapeXml(s.begin)}" end="${escapeXml(s.end)}">${escapeXml(s.text)}</span>`,
-				);
-				if (line.bg_translation) {
-					bgMarkupParts.push(
-						`<span ttm:role="x-translation" xml:lang="${escapeXml(ctx.translationLang)}">${escapeXml(line.bg_translation.trim())}</span>`,
-					);
-				}
-				p.append(`<span ttm:role="x-bg">${bgMarkupParts.join("")}</span>`);
-			}
-			if (line.translation) {
-				p.append(
-					`<span ttm:role="x-translation" xml:lang="${escapeXml(ctx.translationLang)}">${escapeXml(line.translation.trim())}</span>`,
-				);
-			}
-
-			if (line.translation) {
-				tracks.translations.push(
-					`<text for="${escapeXml(key)}">${escapeXml(line.translation.trim())}</text>`,
-				);
-			}
-			if (
-				ctx.romanize &&
-				(transLeadSpans.length > 0 || transBgSpans.length > 0)
-			) {
-				let tText = `<text for="${escapeXml(key)}">`;
-				for (const s of transLeadSpans) {
-					tText += `<span begin="${escapeXml(s.begin)}" end="${escapeXml(s.end)}">${escapeXml(s.text)}</span>`;
-				}
-				if (transBgSpans.length > 0) {
-					tText += `<span ttm:role="x-bg">`;
-					for (const s of transBgSpans) {
-						tText += `<span begin="${escapeXml(s.begin)}" end="${escapeXml(s.end)}">${escapeXml(s.text)}</span>`;
-					}
-					tText += `</span>`;
-				}
-				tText += `</text>`;
-				tracks.transliterations.push(tText);
-			}
+			rebuildSegmentedLine(p, line, ctx, tracks, $);
 		} else {
-			applyWordSpaces(p, line.text, $);
-			const bgVocal = p.find(SELECTOR.bg).first();
-			if (bgVocal.length > 0) applyWordSpaces(bgVocal, line.bg_text, $);
-
-			const { translation, roman } = await annotateLine(p, line, ctx);
-			const entry = (text: string) =>
-				`<text for="${escapeXml(key)}">${escapeXml(text)}</text>`;
-			if (translation) tracks.translations.push(entry(translation));
-			if (roman) tracks.transliterations.push(entry(roman));
+			await processStandardLine(p, line, ctx, tracks, $);
 		}
 
 		const { begin, end } = resolveLineBounds(p);
@@ -546,7 +388,7 @@ export async function buildTtml(
 	const meta: Partial<WorkspaceMeta> = workspace.meta ?? {};
 	const lines = workspace.lines ?? [];
 	const $ = loadTtml(sourceXml);
-	const rawTrans = extractRawTransliterations($);
+	const rawTrans = segment ? extractRawTransliterations($) : {};
 
 	const ctx: LineContext = {
 		translationLang: meta.translationLang || DEFAULT_TRANSLATION_LANG,
