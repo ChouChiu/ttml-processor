@@ -85,39 +85,39 @@ Exporting raw TTML to `workspace.json` strips verbose syllable spans, reducing p
 
 ---
 
-## 3. Mandatory Agent Audit Rules (歌词元数据、翻译与音译三大审查准则)
+## 3. Mandatory Agent Audit Rules
 
 AI Agents processing or generating TTML lyrics MUST strictly review and verify the following three dimensions before building and finalizing:
 
-### 3.1 歌词元数据审查 (Lyric Metadata Audit)
-- **版本对齐与平台 ID**：核实抓取的歌曲音源版本，确保匹配官方录音室发售版本，排除 Live、Remix、伴奏或翻唱版本；核实并保留正确的平台 ID（`qqMusicId`、`ncmMusicId`）。
-- **标题与艺术家规范**：`title` 与 `artists` 必须使用官方正式发行署名，去除平台附加的括号标签（如 `(Live)`、`(에스파)` 等）。
-- **词曲作者完整性（硬性要求）**：`<songwriters>` 必填且非空。必须包含作词人（Lyricist）与作曲人（Composer），排除编曲（Arranger）与制作人（Producer）。大小写与常见通行拼写统一，严禁留空或捏造。
-- **演唱者 Agent 声明**：检查并替换 `workspace.json` 中的临时占位歌手（如 `"v1": "v1"`），关联真实歌手姓名；所有 `<ttm:agent>` 必须声明为 `type="group"`，坚决杜绝触发 AMLL 双列分屏对唱布局。
-- **键名与唯一性审查**：严格检查词曲作者、演唱者 Agent ID、行号键名（`L1`, `L2`...）及 AMLL 元数据键名，杜绝重复与冲突。
-- **保留手改结果**：严禁在手动修改或核对元数据后再次加 `--force` 重新覆盖 `workspace.json`。
+### 3.1 Lyric Metadata Audit
+- **Recording Match & Platform IDs**: Verify candidate from `fetch_song_meta.ts`. Ensure match with official studio release; exclude Live, Remix, instrumental, or cover versions. Retain valid platform IDs (`qqMusicId`, `ncmMusicId`).
+- **Title & Artist Normalization**: `title` and `artists` must reflect official release credits. Strip platform additions like `(Live)` or `(에스파)`.
+- **Songwriters Presence (Mandatory)**: `<songwriters>` block is mandatory and must not be empty (Apple Music specification requirement). Must contain lyricist and composer credits; exclude arrangers and producers. Standardize spelling/casing; never fabricate or omit.
+- **Vocalist Agent Declarations**: Replace placeholder keys in `workspace.json` (`"v1": "v1"`) with real vocalist names. All `<ttm:agent>` must declare `type="group"` to strictly prevent AMLL split-screen duet layout.
+- **Key Uniqueness & Deduplication**: Enforce strict uniqueness across songwriters, agent IDs, line keys (`L1`, `L2`...), and AMLL metadata keys.
+- **Preserve Manual Edits**: Never rerun `--apply` with `--force` after manual verification or corrections.
 
-### 3.2 歌词翻译质量审查 (Translation Quality Audit - 信雅达)
-- **独立创作与零抄袭**：逐行独立构思，严禁复制机器翻译、网络爬取歌词或外部现成译文。
-- **原语言直译**：直接从歌词源语言（韩语、日语等）翻译为目标语言，严禁以英语为中间二道转译。
-- **核心意象与外语 Hook 本地化**：深入契合专辑企划概念、世界观 Lore 与曲风态度。歌曲标题意象、核心概念词及反复出现的英文 Hook 必须在译文中落实且风格统一，严禁因原文是英文而整句放弃翻译。
-- **措辞去油去套路**：
-  - *剔除 AI 虚浮套话*：坚决剔除空洞虚浮的 AI 套路词汇（如“浩瀚苍穹”、“宿命羁绊”、“涅槃之火”、“浴火重生”等），紧扣原词中的具象名词与动作（镜面、霓虹、柏油路、花瓣）；
-  - *杜绝口语流水账*：杜绝散漫日常聊天大白话（如“我好难过”、“再喝一杯酒吧”、“赶紧结束这一切”），选用动感具象动词与工整句式，保持舞台张力与歌唱律动。
-- **拟声词与语气词区分**：
-  - *节拍口号与拟声词*（Vocables/Chants）：带有舞台张力与律动感，须结合曲风做动感意译；
-  - *纯无实义尾音*：无语义抒情叹气、短促呼吸声适度省略留白，保持字幕诗意凝练。
-- **双轨 1:1 覆盖**：确保行内翻译（Track A: `x-translation`）与集中翻译（Track B: `translations`）逐行 1:1 对应无遗漏。
+### 3.2 Translation Quality Audit (Xin Ya Da / 信 · 雅 · 达)
+- **Zero-Copy & Independent Creation**: Translate strictly from scratch line by line. Never copy machine translations, web scraps, or external lyric sheets.
+- **Direct Source Translation**: Translate directly from the original source language into the target language; never pivot through an intermediate language (e.g., no English pivot for Korean/Japanese songs).
+- **Thematic Concept & Foreign Hook Localization**: Deeply align with album concept, universe lore, and musical attitude. Song titles, narrative keywords, and recurring foreign hooks must be translated into unified target expressions; never leave hooks untranslated simply because they are in English.
+- **Diction Guardrails**:
+  - *Eliminate AI Clichés*: Forbid hollow tropes ("浩瀚苍穹", "涅槃之火", "宿命羁绊", "浴火重生"). Ground imagery in concrete lyric nouns and actions (mirrors, neon lights, asphalt, petals).
+  - *Eliminate Casual Chat*: Forbid lazy prose ("我好难过", "再喝一杯酒吧", "赶紧结束这一切"). Maintain stage tension, punchy verbs, and singable cadence.
+- **Chants vs. Fillers**:
+  - *Rhythmic Chants / Vocables / Onomatopoeia*: Artistically translate by meaning (意译) using sensory verbs and balanced four-character phrasing.
+  - *Pure Acoustic Fillers*: Omit non-semantic breath releases and line-end sighs to keep subtitles poetic and readable.
+- **Dual-Track 1:1 Coverage**: Ensure inline translations (Track A: `x-translation`) and central translations (Track B: `translations`) mirror 1:1 without omissions.
 
-### 3.3 音译规范审查 (Transliteration Audit - Option C)
-- **Option C 严格遵循**：
-  - 纯英文/纯拉丁字符行**严禁音译**（必须为 null / 省略）；
-  - 混排行必须彻底剔除已有的英文单词，仅对非拉丁字符进行音译，杜绝英文单词被原样拷贝进音译轨。
-- **音节切分平滑性（`--segment`）**：
-  - 对非拉丁多字词按比例细分为单字音节，检查时间戳单调递增；
-  - 尾随空格必须且仅附着在词边界音节末尾，确保卡拉OK逐字高亮时自然分词。
-  - 集中音译生成 `<span begin="..." end="...">` 时间轴节点，同时避免在 `<p>` 上生成静态第 3 行音译干扰阅读。
-- **和声封闭性**：背景和声（`x-bg`）的翻译与音译必须严格嵌套在 `x-bg` 内部，严禁泄漏至主声部。
+### 3.3 Transliteration Audit (Option C)
+- **Strict Option C Compliance**:
+  - Pure Latin / English lines **strictly omit transliterations** (`null`);
+  - Mixed-language lines must thoroughly strip existing Latin words, transliterating non-Latin characters only.
+- **Syllable Segmentation Smoothing (`--segment`)**:
+  - Subdivide multi-character non-Latin words proportionally into single-character syllable spans with monotonic timestamps;
+  - Trailing spaces attach strictly to word boundary syllables to preserve natural word spacing;
+  - Populate timed spans in `<transliterations>` without creating static 3rd subtitle lines on `<p>`.
+- **Background Vocal Isolation**: Background translations and transliterations must be nested strictly inside `<span ttm:role="x-bg">`, never leaking into lead vocals.
 
 ---
 
