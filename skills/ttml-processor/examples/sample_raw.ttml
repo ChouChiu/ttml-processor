@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+<tt itunes:timing="Word" xml:lang="ko"
+    xmlns="http://www.w3.org/ns/ttml"
+    xmlns:itunes="http://music.apple.com/lyric-ttml-internal"
+    xmlns:ttm="http://www.w3.org/ns/ttml#metadata"
+    xmlns:tts="http://www.w3.org/ns/ttml#styling"
+    xmlns:amll="http://www.example.com/ns/amll">
+  <head>
+    <metadata>
+      <ttm:title>Supernova</ttm:title>
+      <amll:meta key="musicName" value="Supernova"/>
+      <amll:meta key="artists" value="aespa"/>
+      <amll:meta key="album" value="Armageddon - The 1st Album"/>
+      <amll:meta key="ttmlAuthorGithub" value="ChouChiu"/>
+    </metadata>
+  </head>
+  <body dur="03:15.000">
+    <div>
+      <p begin="0:10.200" end="0:13.400" itunes:key="L1" ttm:agent="v1">
+        <span begin="0:10.200" end="0:11.100">꽃을 </span>
+        <span begin="0:11.100" end="0:12.000">피워 </span>
+        <span begin="0:12.000" end="0:13.400">catwalking</span>
+      </p>
+      <p begin="0:13.500" end="0:16.800" itunes:key="L2" ttm:agent="v1 v2">
+        <span begin="0:13.500" end="0:16.800">Watch how I let it all unfold</span>
+        <span ttm:role="x-bg" begin="0:15.200" end="0:16.800">
+          <span begin="0:15.200" end="0:16.800">(일라)</span>
+        </span>
+      </p>
+    </div>
+  </body>
+</tt>

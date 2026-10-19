@@ -1,0 +1,34 @@
+{
+	"meta": {
+		"title": "Supernova",
+		"artists": "aespa",
+		"album": "Armageddon - The 1st Album",
+		"author": "ChouChiu",
+		"translationLang": "zh-Hans",
+		"romanLang": "ko-Latn",
+		"songwriters": ["KENZIE", "Paris Alexa", "Dem Jointz"],
+		"extraAmllMeta": {},
+		"agents": {
+			"v1": "Karina",
+			"v2": "Winter"
+		}
+	},
+	"lines": [
+		{
+			"key": "L1",
+			"part": "Verse",
+			"agent": "v1",
+			"text": "꽃을 피워 catwalking",
+			"translation": "繁花盛放 步步傲然穿行"
+		},
+		{
+			"key": "L2",
+			"part": "Chorus",
+			"agent": "v1 v2",
+			"text": "Watch how I let it all unfold",
+			"translation": "且看我如何让万物全数破晓",
+			"bg_text": "(일라)",
+			"bg_translation": "(快苏醒吧)"
+		}
+	]
+}

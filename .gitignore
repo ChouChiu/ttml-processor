@@ -1,0 +1,37 @@
+# Dependencies
+node_modules/
+
+# Output & Build
+out/
+dist/
+*.tgz
+
+# Testing & Coverage
+coverage/
+*.lcov
+
+# Working & Temporary files from CLI pipeline
+*.ttml
+!**/examples/*.ttml
+workspace.json
+!**/examples/*.json
+temp.json
+completed.ttml
+
+# Logs & Environment
+logs/
+*.log
+.env*
+!.env.example
+
+# Caches
+.cache/
+*.tsbuildinfo
+.eslintcache
+
+# OS & IDE
+.DS_Store
+Thumbs.db
+.idea/
+*.sublime-project
+*.sublime-workspace

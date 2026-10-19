@@ -1,0 +1,32 @@
+{
+	"name": "ttml-processor",
+	"module": "index.ts",
+	"type": "module",
+	"private": true,
+	"scripts": {
+		"test": "bun test",
+		"typecheck": "tsc --noEmit",
+		"pipeline": "bun scripts/ttml_pipeline.ts",
+		"genius": "bun scripts/fetch_genius_parts.ts",
+		"validate": "bun scripts/validate_ttml.ts",
+		"check": "biome check . && tsc --noEmit",
+		"format": "biome check --write .",
+		"meta": "bun scripts/fetch_song_meta.ts"
+	},
+	"devDependencies": {
+		"@biomejs/biome": "^2.5.15",
+		"@types/bun": "latest",
+		"typescript": "^5"
+	},
+	"dependencies": {
+		"@applemusic-like-lyrics/ttml": "^1.0.1",
+		"@xmldom/xmldom": "^0.9.12",
+		"cheerio": "^1.2.0",
+		"domhandler": "^5.0.3",
+		"koroman": "^1.0.16",
+		"kuroshiro": "^1.2.1",
+		"kuroshiro-analyzer-kuromoji": "^1.1.0",
+		"pinyin-pro": "^3.29.5",
+		"wanakana": "^5.3.1"
+	}
+}
