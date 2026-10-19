@@ -80,9 +80,17 @@ The metadata block carries track details, singer registrations, and Apple Music 
           </translation>
         </translations>
 
-        <!-- Option C Transliterations (Pure Latin lines omitted; mixed lines keep only non-Latin syllables) -->
+        <!-- Option C Transliterations:
+             - Standard mode: Plain text string
+             - Syllable-segmented mode (--segment): Timed spans for AMLL word.romanWord karaoke mapping without 3rd static line clutter -->
         <transliterations>
           <transliteration xml:lang="ko-Latn">
+            <!-- Syllable-timed format (preferred for karaoke highlight) -->
+            <text for="L1">
+              <span begin="0:10.200" end="0:11.100">kkoch-eul </span>
+              <span begin="0:11.100" end="0:12.000">pi-wo </span>
+            </text>
+            <!-- Line-level format -->
             <text for="L2">geu wi-ro</text>
           </transliteration>
         </transliterations>

@@ -33,7 +33,7 @@ Always follow this 5-phase procedure when processing TTML lyrics:
   └── Write translations into workspace.json ("translation" & "bg_translation")
              │
 [Phase 4: Standardized Build & Romanization]
-  └── bun scripts/ttml_pipeline.ts build song.ttml workspace.json -o completed.ttml [--no-roman]
+  └── bun scripts/ttml_pipeline.ts build song.ttml workspace.json -o completed.ttml [--no-roman] [--segment]
              │
 [Phase 5: Automated Verification & Linting]
   ├── bun scripts/validate_ttml.ts completed.ttml
@@ -124,19 +124,18 @@ Adhere strictly to the literary quality guidelines:
    - Maintain stage tension, rhythmic bite, and acoustic flow suitable for live performance.
 4. **Zero-Copy Rule**:
    - Strictly prohibit copying or borrowing machine translations, web scraps, or external templates. Every song translation is an independent piece of art created from scratch.
-5. **Direct Source Translation**:
-   - Translate straight from the original language into the target language; never pivot through English (e.g., Korean/Japanese → English → Chinese) as an intermediate step
-   - Translate English segments as well; never translate only the Korean/Japanese part while leaving English words or English lines untouched (onomatopoeia and interjections excepted)
-6. **Keep Onomatopoeia & Interjections Untranslated**:
-   - Onomatopoeia, interjections, and vocables (e.g., `oh`, `yeah`, `ah`, `na na na`, `la la`, `woo`, `ooh`, `hey`, `아`, `오`, `ねえ`) stay in their original form inside the translation
-   - A line made up entirely of such sounds uses the original text verbatim as its translation
-7. **Timing Guardrails**:
-   - Never modify syllable timestamps (`<span begin="..." end="...">`) or line timestamps.
-   - The pipeline handles all reconstruction, preserving trailing spaces (`"word "`) for smooth karaoke highlights.
-8. **Insert Missing Word Spaces**:
-   - When adjacent syllable spans of two separate words have no space between them (e.g., `<span>Imma</span><span>get</span><span>'em</span>` exporting as `"text": "Immaget'em"`), fix the spacing in the workspace `text` / `bg_text` (`"Imma get 'em"`)
-   - `build` appends the trailing space to the matching syllable span (`Imma `, `get `) and never touches timestamps or splits spans; it only adds spaces, and skips the line when anything other than spaces differs from the source
-   - Never add spaces between syllables of the same word or between CJK characters
+5. **Direct Source Translation & Thematic Keyword Localization**:
+   - Translate straight from the original language into the target language; never pivot through an intermediate language.
+   - Core thematic keywords, recurring foreign hooks, and song title terms must be translated into resonant target-language concepts aligned with the track's narrative lore, never left untranslated.
+6. **Artistic 意译 for Chants vs. Subtitle Omission for Fillers**:
+   - Percussive chants, kinetic sound-effect words, and phonetic puns carry sonic momentum and should be artistically translated by meaning (意译) using vivid sensory verbs and rhythmic phrasing to preserve live stage tension.
+   - Pure decorative acoustic filler particles carrying no narrative meaning (e.g., breath releases, syncopation syllables at phrase ends) should be omitted from the translation to maintain clean, singable, and poetic subtitles.
+7. **Syllable-Level Segmentation & Space Preservation (`--segment`)**:
+   - When segmenting multi-character non-Latin words into single-character spans, subdivide timestamps proportionally by character count and duration.
+   - Trailing spaces must attach strictly to the final character of each word, ensuring natural inter-word spacing is preserved without word merging.
+   - Transliterations are structured as timed spans `<span begin="..." end="...">` in `<iTunesMetadata><transliterations>`, cleanly populating syllable boxes in editors and players without creating static 3rd subtitle lines.
+8. **Word Spacing Alignment**:
+   - When adjacent word spans lack separating whitespace in source TTML, adjust the workspace text spacing so the pipeline automatically appends trailing spaces to the boundary syllables.
 
 ---
 
@@ -147,6 +146,7 @@ Adhere strictly to the literary quality guidelines:
 | **Duet Prevention** | Prevent AMLL split-screen duet layout (`isDuet: true`) | Declare **all** agents with `type="group"` in `<metadata>`. Compound singers (e.g. `v1 v2`) are automatically synthesized and registered. |
 | **Song Parts** | Organize lines into structural musical sections | Continuous `<div itunes:songPart="..." begin="..." end="...">`. First line begin and last line end define div bounds. |
 | **Option C Transliteration** | Transliterate non-Latin characters only | Pure English lines are **strictly omitted** (`null`). Mixed lines strip Latin words, transliterating only Korean (`koroman`), Japanese (`kuroshiro` + `kuromoji`), or Chinese (`pinyin-pro`). |
+| **Syllable Karaoke Sync** | Word-by-word Romaja/Pinyin without static 3rd line | Timed spans in `<iTunesMetadata><transliterations><transliteration><text for="L{N}"><span begin="..." end="...">roman</span>` populate `word.romanWord` in AMLL. Suppress inline `<span ttm:role="x-roman">` on `<p>`. |
 | **Dual-Track Translation** | Simultaneous support for AMLL & Apple Music | **Track A**: Inline `<span ttm:role="x-translation">` on every `<p>`.<br>**Track B**: Centralized `<iTunesMetadata><translations><translation><text for="L{N}">` covering 100% of lines. |
 | **Background Vocals** | Ad-libs, chants, and secondary vocals | Nest inside `<span ttm:role="x-bg">`. Background translations and transliterations must be nested strictly inside `x-bg`. |
 | **Clean Formatting** | Beautiful, git-diffable TTML | Formatted with 2-space indentation, inline leaf tags, and preserved syllable whitespace. |
@@ -165,8 +165,8 @@ bun scripts/fetch_genius_parts.ts "<artist> <title>" [--ttml] [--lyrics]
 # Fetch title, artists, album, songwriters and qqMusicId / ncmMusicId from QQ Music and NetEase
 bun scripts/fetch_song_meta.ts "<artist> <title> | song url" [--source qq|netease|all] [--apply workspace.json] [--force] [--json]
 
-# Build completed TTML from workspace JSON
-bun scripts/ttml_pipeline.ts build <input.ttml> <workspace.json> -o <output.ttml> [--no-roman]
+# Build completed TTML from workspace JSON (add --segment for syllable-level CJK segmentation)
+bun scripts/ttml_pipeline.ts build <input.ttml> <workspace.json> -o <output.ttml> [--no-roman] [--segment]
 
 # Validate TTML syntax, AMLL duet status, namespaces, and translations
 bun scripts/validate_ttml.ts <file.ttml>

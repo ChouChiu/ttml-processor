@@ -27,15 +27,23 @@ Before translating, **you MUST conduct thorough context and lore research**, str
    - Every lyric translation is an independent piece of art. Translate from zero based on original vocal cues, rhythm, and stage persona.
    - When requested to re-translate, wipe all assumptions from prior drafts and start afresh line by line.
 3. **Direct Source Translation (No Pivot Language)**:
-   - Translate directly from the original lyric language into the target language
-   - Never translate into English first and then into the target language; a pivot step flattens wordplay, honorifics, and sentence-final nuance that only exist in the source
-   - Mixed-language lines (e.g., Korean with English hooks) are translated segment by segment from each segment's own language
-   - English segments must be translated too; never translate only the Korean/Japanese part and leave English words, phrases, or whole English lines as-is (only onomatopoeia and interjections stay untranslated, see rule 4)
-4. **Onomatopoeia & Interjections Stay Untranslated**:
-   - Keep onomatopoeia, interjections, and vocables in their original form inside the translation (e.g., `oh`, `yeah`, `ah`, `uh`, `na na na`, `la la la`, `woo`, `ooh`, `hey`, `아`, `오`, `ねえ`, `あぁ`)
-   - Do not render them as Chinese equivalents such as "哦", "耶", "啊", "啦啦啦", "嘿"
-   - A line made up entirely of such sounds uses the original text verbatim as its translation (and as its `bg_translation` for background vocals)
-   - Words that carry real meaning beyond sound (e.g., `hey you`, `oh my god` used as a phrase) are translated normally
+   - Translate directly from the original lyric language into the target language.
+   - Never translate into English first and then into the target language; a pivot step flattens wordplay, honorifics, and sentence-final nuance that only exist in the source.
+   - Mixed-language lines (e.g., Korean with English hooks) are translated segment by segment from each segment's own language.
+4. **Core Concept & Keyword Translation (核心概念与曲名关键词翻译方法)**:
+   - **Thematic Anchor Identification**: Determine the track's narrative core and lore. Recurring foreign keywords, hooks, and song title terms represent the conceptual axis of the track.
+   - **Semantic Localization**: Never leave title words, core English phrases, or narrative nouns untranslated simply because they are in English. Ground them in the song's emotional and narrative universe, establishing a unified, evocative Chinese translation applied consistently across lead vocals and background ad-libs.
+   - **Acoustic & Genre Scale Alignment**: Translate action verbs and concept nouns with dynamic Chinese terminology that matches the musical intensity (e.g., electronic drive, trap bite, or cinematic grandeur), rather than relying on dry literal vocabulary.
+5. **Artistic Interpretation of Chants, Onomatopoeia & Beat Vocables (拟声词、节拍口号与谐音意译法则)**:
+   - **Functional Decoding**: Distinguish non-lexical sounds used as pure melodic vocalises from those functioning as percussive beats, physical action triggers, or acoustic metaphors.
+   - **Sensory & Kinetic Imagery**: For sound-effect words, rhythmic chants, or percussion-mimicking phrases, translate the kinetic motion, sonic impact, and physical tension using vivid sensory verbs and balanced four-character structures, preserving the auditory punch for the audience.
+   - **Bilingual & Phonetic Wordplay**: When chants employ phonetic puns or double entendres (e.g., sound-alike syllables across languages), decode the dual meaning and express the underlying narrative invitation, defiance, or thematic tension.
+   - **Structural Arrangement Cues**: When vocal shouts mark musical breakdowns, drops, or beat switches, translate the shift in acoustic tension and physical energy rather than retaining a passive audio-engineering term.
+6. **Handling Decorative Vocal Ticks & Filler Interjections (无实义语气词的省略法则)**:
+   - **Distinguish Fillers from Emotional Exclamations**:
+     - *Pure Fillers*: Breath releases, line-final sighs, and rhythmic groove ornaments that serve purely musical groove functions without carrying semantic or narrative content.
+     - *Emotional Exclamations*: Genuine expressions of anguish, triumph, or determination that carry dramatic narrative weight.
+   - **Subtitle Omission Principle**: Pure decorative filler particles occurring at phrase boundaries should be omitted from the target translation. Transcribing or translating acoustic breath ticks creates cluttered, unpoetic subtitles; omitting them ensures the line remains focused, rhythmically weighted, and singable.
 
 ---
 
@@ -98,5 +106,11 @@ When authoring or modifying TTML files, observe these strict guardrails to preve
    - Every `<p itunes:key="L{N}">` must have exactly one inline `<span ttm:role="x-translation">`.
    - The `<iTunesMetadata><translations>` node must include entries for every `L1` through `LN` without omission.
 3. **Preserve Whitespace & Punctuation**:
-   - Maintain syllable-spacing trailing spaces (e.g., `I `, `know `) to ensure smooth word-by-word highlight transitions in AMLL and Apple Music.
-   - If adjacent word spans lack a separating space (e.g., `Imma` `get` `'em` joined as `Immaget'em`), fix the workspace `text` / `bg_text` to `Imma get 'em`; `build` then appends the trailing space to the earlier span (`Imma `, `get `). This is the only permitted change to original syllable text, and it never applies to syllables within one word or to CJK characters
+   - Maintain syllable-spacing trailing spaces on word boundaries to ensure smooth word-by-word highlight transitions in playback engines.
+   - When adjacent word spans lack separating whitespace, correct the workspace text spacing so the pipeline attaches trailing spaces to the appropriate word-boundary spans.
+4. **Syllable Segmentation & Trailing Space Placement (`--segment`)**:
+   - When segmenting multi-character non-Latin words into single-character spans, timestamps are proportionally subdivided based on character count and duration (`dur / N`).
+   - Trailing whitespace must attach strictly to the final character of each word. Spans joined via `map(s => s.text).join("")` must faithfully reproduce the spaced text without merging words or adding spaces within words.
+5. **Playback Engine Subtitle Cleanliness**:
+   - Supply timed transliteration spans inside `<iTunesMetadata><transliterations>` to populate individual syllable inputs and enable synchronized karaoke tracking.
+   - Avoid appending inline transliteration spans on the paragraph element when timed transliterations are present, preventing playback engines from rendering redundant static third subtitle lines.

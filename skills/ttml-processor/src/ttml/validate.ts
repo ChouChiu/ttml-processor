@@ -72,6 +72,11 @@ function checkAmllEngine(xml: string, report: Report): void {
 		} else {
 			report.note("AMLL duet guard: single-column layout (isDuet=false)");
 		}
+		if (amll.lines.some((l) => l.words?.some((w) => Boolean(w.romanWord)))) {
+			report.note(
+				"AMLL transliteration: syllable-synced (word.romanWord populated)",
+			);
+		}
 	} catch (e) {
 		report.warn(
 			`AMLL engine parser note: ${e instanceof Error ? e.message : String(e)}`,
@@ -251,6 +256,45 @@ function checkCentralTranslations(
 	return keys.size;
 }
 
+function checkCentralTransliterations(
+	$: CheerioAPI,
+	lines: Node$[],
+	report: Report,
+): void {
+	const sungMap = new Map<string, string>();
+	lines.forEach((p, i) => {
+		const key = lineKey(p) ?? `L${i + 1}`;
+		sungMap.set(key, sungText(p, $));
+	});
+
+	$("head metadata transliterations transliteration text").each((_, el) => {
+		const key = $(el).attr("for");
+		if (!key) return;
+		const sung = sungMap.get(key);
+		if (!sung) return;
+
+		// Option C rule 1: Pure Latin lines should omit transliterations completely
+		if (!NON_LATIN.test(sung)) {
+			report.warn(
+				`Option C: pure Latin line '${key}' should omit transliteration: "${sung}"`,
+			);
+			return;
+		}
+
+		// Option C rule 2: Latin words must be stripped from transliterations
+		const transText = $(el).text();
+		const romanWords = new Set(normalizedWords(transText));
+		const leaked = normalizedWords(sung).filter(
+			(w) => w.length >= 3 && /^[a-z0-9_-]+$/.test(w) && romanWords.has(w),
+		);
+		if (leaked.length > 0) {
+			report.warn(
+				`Option C: Latin words [${leaked.join(", ")}] not stripped from transliteration '${key}'`,
+			);
+		}
+	});
+}
+
 export function validateTtml(xml: string): ValidationResult {
 	const report = new Report();
 	checkAmllEngine(xml, report);
@@ -278,6 +322,7 @@ export function validateTtml(xml: string): ValidationResult {
 	checkAgents($, lines, report);
 	const trackA = checkLines($, lines, report);
 	const trackB = checkCentralTranslations($, lines.length, report);
+	checkCentralTransliterations($, lines, report);
 
 	report.note(
 		`Sections: ${$("body div").length} | Lines: ${lines.length} | Track A: ${trackA} | Track B: ${trackB}`,

@@ -10,7 +10,7 @@ const USAGE = `Usage: bun scripts/ttml_pipeline.ts <command> [options]
 
 Commands:
   export <input.ttml> [-o <workspace.json>]    Print or save the editable workspace JSON
-  build <input.ttml> <workspace.json> -o <output.ttml> [--no-roman]
+  build <input.ttml> <workspace.json> -o <output.ttml> [--no-roman] [--segment]
   validate <file.ttml>`;
 
 function exportCommand(input: string, output?: string): number {
@@ -38,13 +38,18 @@ async function buildCommand(
 	workspacePath: string,
 	output: string,
 	romanize: boolean,
+	segment: boolean,
 ): Promise<number> {
 	const xml = readTextFile(input, "Source TTML");
 	const workspace = JSON.parse(
 		readTextFile(workspacePath, "Workspace JSON"),
 	) as WorkspaceData;
 
-	writeFileSync(output, await buildTtml(xml, workspace, { romanize }), "utf-8");
+	writeFileSync(
+		output,
+		await buildTtml(xml, workspace, { romanize, segment }),
+		"utf-8",
+	);
 	console.log(`[BUILD] Generated TTML: ${output}`);
 	return runValidation(output) ? 0 : 1;
 }
@@ -56,6 +61,7 @@ runCli(async () => {
 		options: {
 			output: { type: "string", short: "o" },
 			"no-roman": { type: "boolean", default: false },
+			segment: { type: "boolean", default: false },
 			help: { type: "boolean", short: "h", default: false },
 		},
 	});
@@ -69,7 +75,13 @@ runCli(async () => {
 		return exportCommand(first, values.output);
 	}
 	if (command === "build" && first && second && values.output) {
-		return buildCommand(first, second, values.output, !values["no-roman"]);
+		return buildCommand(
+			first,
+			second,
+			values.output,
+			!values["no-roman"],
+			Boolean(values.segment),
+		);
 	}
 	if (command === "validate" && first) {
 		return runValidation(first) ? 0 : 1;
