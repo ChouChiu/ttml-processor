@@ -1,4 +1,5 @@
 import type { CheerioAPI } from "cheerio";
+import { type AnyNode, isTag, isText } from "domhandler";
 import { detectSongLanguage, getTtmlLangTag } from "../lang";
 import { romanizeOptionC } from "../romanizer";
 import type { WorkspaceData, WorkspaceLine, WorkspaceMeta } from "../types";
@@ -16,7 +17,7 @@ import {
 	SELECTOR,
 	splitAgentIds,
 } from "./document";
-import { escapeXml, formatTtml } from "./xml";
+import { escapeXml, formatTtml, unescapeXml } from "./xml";
 
 export interface BuildOptions {
 	/** Generate Option C transliterations (default true) */
@@ -201,6 +202,83 @@ function resolveLineBounds(p: Node$): { begin: string; end: string } {
 	};
 }
 
+function isSyllableSpan(node: AnyNode | null | undefined): boolean {
+	return (
+		!!node &&
+		isTag(node) &&
+		node.tagName === "span" &&
+		Boolean(node.attribs?.begin) &&
+		!node.attribs?.["ttm:role"]
+	);
+}
+
+/**
+ * Absorbs whitespace text nodes between syllable spans into standard trailing spaces
+ * on the preceding span, preserving word boundaries in AMLL and Apple Music players.
+ */
+function normalizeSyllableSpaces(root: Node$, $: CheerioAPI): void {
+	const containers = [
+		root,
+		...root
+			.find(SELECTOR.bg)
+			.toArray()
+			.map((el) => $(el)),
+	];
+
+	for (const container of containers) {
+		const contents = container.contents().toArray();
+		for (let i = 0; i < contents.length; i++) {
+			const node = contents[i];
+			if (node && isText(node) && /^\s+$/.test(node.data)) {
+				const prev = contents[i - 1];
+				const next = contents[i + 1];
+				if (isSyllableSpan(prev) && isSyllableSpan(next)) {
+					const prevText = $(prev).text();
+					if (!prevText.endsWith(" ")) {
+						$(prev).text(`${prevText} `);
+					}
+				}
+				$(node).remove();
+			}
+		}
+	}
+}
+
+/**
+ * Appends a trailing space to syllables the workspace text separates with a space but the
+ * source joins (e.g. "Imma" "get" rendering as "Immaget"). Skipped when the letters differ.
+ */
+function applyWordSpaces(
+	container: Node$,
+	text: string | undefined,
+	$: CheerioAPI,
+): void {
+	const spans = container.children().toArray().filter(isSyllableSpan);
+	const target = (text ?? "").replace(/\s+/g, " ").trim();
+	const syllables = spans.map((span) => unescapeXml($(span).text()));
+	const letters = (str: string) => str.replace(/\s+/g, "");
+	if (spans.length < 2 || letters(syllables.join("")) !== letters(target)) {
+		return;
+	}
+
+	let pos = 0;
+	for (const [i, syllable] of syllables.entries()) {
+		for (let n = letters(syllable).length; n > 0; n--) {
+			while (target[pos] === " ") pos++;
+			pos++;
+		}
+		const span = spans[i];
+		if (
+			span &&
+			i < spans.length - 1 &&
+			target[pos] === " " &&
+			!/\s$/.test(syllable)
+		) {
+			$(span).text(`${$(span).text()} `);
+		}
+	}
+}
+
 /** Regroups every <p> into one songPart <div> per run of consecutive lines sharing a part */
 async function rebuildBody(
 	$: CheerioAPI,
@@ -219,6 +297,7 @@ async function rebuildBody(
 	let section: { part: string; div: Node$ } | undefined;
 
 	for (const [i, p] of paragraphs.entries()) {
+		normalizeSyllableSpaces(p, $);
 		let key = lineKey(p);
 		if (!key) {
 			key = `L${i + 1}`;
@@ -232,6 +311,9 @@ async function rebuildBody(
 				text: "",
 				translation: "",
 			};
+		applyWordSpaces(p, line.text, $);
+		const bgVocal = p.find(SELECTOR.bg).first();
+		if (bgVocal.length > 0) applyWordSpaces(bgVocal, line.bg_text, $);
 
 		const { translation, roman } = await annotateLine(p, line, ctx);
 		const entry = (text: string) =>

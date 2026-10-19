@@ -99,4 +99,4 @@ When authoring or modifying TTML files, observe these strict guardrails to preve
    - The `<iTunesMetadata><translations>` node must include entries for every `L1` through `LN` without omission.
 3. **Preserve Whitespace & Punctuation**:
    - Maintain syllable-spacing trailing spaces (e.g., `I `, `know `) to ensure smooth word-by-word highlight transitions in AMLL and Apple Music.
-   - If adjacent word spans lack a separating space (e.g., `Imma` `get` `'em` joined as `Immaget'em`), add a trailing space to the earlier word's span text (`Imma `, `get `); this is the only permitted change to original syllable text, and it never applies to syllables within one word or to CJK characters
+   - If adjacent word spans lack a separating space (e.g., `Imma` `get` `'em` joined as `Immaget'em`), fix the workspace `text` / `bg_text` to `Imma get 'em`; `build` then appends the trailing space to the earlier span (`Imma `, `get `). This is the only permitted change to original syllable text, and it never applies to syllables within one word or to CJK characters

@@ -88,6 +88,43 @@ describe("build", () => {
 		);
 		expect(out).toContain('<p itunes:key="L1" begin="1.0" end="1.5">');
 	});
+
+	it("inserts word spaces the workspace text adds between joined syllables", async () => {
+		const syllables = ["Imma", "get", "&apos;em", "beau", "ti", "ful"]
+			.map((t, i) => `<span begin="${i}.0" end="${i}.5">${t}</span>`)
+			.join("");
+		const bg =
+			'<span ttm:role="x-bg"><span begin="6.0" end="6.5">(oh</span><span begin="6.5" end="7.0">yeah)</span></span>';
+		const source = ttml("", `<p itunes:key="L1">${syllables}${bg}</p>`);
+		const workspace = exportWorkspace(source);
+		expect(workspace.lines[0]?.text).toBe("Immaget'embeautiful");
+
+		const line = workspace.lines[0];
+		if (!line) throw new Error("missing line");
+		line.text = "Imma get 'em beautiful";
+		line.bg_text = "(oh yeah)";
+		const out = await buildTtml(source, workspace, { romanize: false });
+		expect(exportWorkspace(out).lines[0]).toMatchObject({
+			text: "Imma get 'em beautiful",
+			bg_text: "(oh yeah)",
+		});
+		expect(out).toContain('<span begin="2.0" end="2.5">&apos;em </span>');
+		expect(out).toContain('<span begin="3.0" end="3.5">beau</span>');
+		expect(out).toContain('<span begin="5.0" end="5.5">ful</span>');
+	});
+
+	it("leaves syllables untouched when the workspace text changes letters", async () => {
+		const source = ttml(
+			"",
+			'<p itunes:key="L1"><span begin="0.0" end="0.5">Imma</span><span begin="0.5" end="1.0">get</span></p>',
+		);
+		const workspace = exportWorkspace(source);
+		const line = workspace.lines[0];
+		if (!line) throw new Error("missing line");
+		line.text = "I'mma get";
+		const out = await buildTtml(source, workspace, { romanize: false });
+		expect(exportWorkspace(out).lines[0]?.text).toBe("Immaget");
+	});
 });
 
 describe("formatTtml", () => {
